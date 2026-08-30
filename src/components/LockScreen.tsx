@@ -154,7 +154,6 @@ export const LockScreen: React.FC = () => {
   };
 
 
-
   return (
     <div className="relative w-screen h-screen overflow-hidden flex items-center justify-center bg-[#050507]">
       
