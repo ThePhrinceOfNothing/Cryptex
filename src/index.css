@@ -1,0 +1,52 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  @apply bg-white text-gray-900 min-h-screen font-sans;
+}
+
+html[data-density='compact'] .p-4 { padding: 0.5rem; }
+html[data-density='compact'] .p-6 { padding: 1rem; }
+html[data-density='compact'] .py-4 { padding-top: 0.5rem; padding-bottom: 0.5rem; }
+html[data-density='compact'] .px-6 { padding-left: 1rem; padding-right: 1rem; }
+html[data-density='compact'] .gap-6 { gap: 1rem; }
+html[data-density='compact'] .gap-4 { gap: 0.5rem; }
+html[data-density='compact'] .space-y-4 > :not([hidden]) ~ :not([hidden]) { margin-top: 0.5rem; }
+
+/* Hide native password reveal button in Edge/Chrome */
+input[type="password"]::-ms-reveal,
+input[type="password"]::-ms-clear {
+  display: none;
+}
+input[type="password"]::-webkit-reveal,
+input[type="password"]::-webkit-clear-button {
+  display: none;
+}
+
+
+/* TipTap Editor Styles */
+.ProseMirror {
+  @apply outline-none min-h-[300px] text-gray-700 leading-relaxed;
+}
+
+.ProseMirror p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  float: left;
+  color: #D1D5DB;
+  pointer-events: none;
+  height: 0;
+}
+
+.ProseMirror h1 { @apply text-3xl font-bold mt-6 mb-4; }
+.ProseMirror h2 { @apply text-2xl font-bold mt-5 mb-3; }
+.ProseMirror h3 { @apply text-xl font-bold mt-4 mb-2; }
+.ProseMirror p { @apply mb-3; }
+.ProseMirror ul { @apply list-disc pl-5 mb-3 space-y-1; }
+.ProseMirror ol { @apply list-decimal pl-5 mb-3 space-y-1; }
+.ProseMirror a { @apply text-blue-500 hover:underline cursor-pointer; }
+.ProseMirror blockquote { @apply border-l-4 border-gray-200 pl-4 py-1 italic text-gray-600 my-4 bg-gray-50 rounded-r-md; }
+.ProseMirror code { @apply bg-gray-100 text-accent px-1.5 py-0.5 rounded text-sm font-mono; }
+.ProseMirror pre { @apply bg-gray-900 text-gray-100 p-4 rounded-lg my-4 overflow-x-auto; }
+.ProseMirror pre code { @apply bg-transparent text-gray-100 p-0; }
+.ProseMirror strong { @apply font-bold text-gray-900; }
