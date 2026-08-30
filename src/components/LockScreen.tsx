@@ -9,6 +9,7 @@ import logoUrl from '../assets/logo.svg';
 import { motion, AnimatePresence, useAnimation } from 'framer-motion';
 import { WebThreads } from './WebThreads';
 import { check } from '@tauri-apps/plugin-updater';
+import { getVersion } from '@tauri-apps/api/app';
 import { DownloadCloud } from 'lucide-react';
 
 export const LockScreen: React.FC = () => {
@@ -25,6 +26,7 @@ export const LockScreen: React.FC = () => {
 
   const [updateAvailable, setUpdateAvailable] = useState<any>(null);
   const [isUpdating, setIsUpdating] = useState(false);
+  const [appVersion, setAppVersion] = useState<string>('...');
 
   const controls = useAnimation();
   const [time, setTime] = useState(new Date());
@@ -147,8 +149,12 @@ export const LockScreen: React.FC = () => {
     exit: { opacity: 0, scale: 0.95, transition: { duration: 0.3, ease: 'easeIn' } }
   };
 
+  useEffect(() => {
+    getVersion().then(setAppVersion).catch(console.error);
+  }, []);
+
   return (
-    <div className="relative w-full h-screen flex items-center justify-center bg-[#050507] text-white font-sans selection:bg-[#008EFF]/30 overflow-hidden">
+    <div className="relative w-screen h-screen overflow-hidden flex items-center justify-center bg-[#050507]">
       
       {/* Dynamic WebGL Background */}
       <div className="absolute inset-0 z-0">
@@ -262,7 +268,7 @@ export const LockScreen: React.FC = () => {
                     type="file" 
                     accept=".vault,application/json" 
                     className="hidden" 
-                    id="welcome-vault-upload"
+                    id="welcome-vault-upload" 
                     onChange={(e) => {
                       const file = e.target.files?.[0];
                       if (file) {
@@ -287,7 +293,7 @@ export const LockScreen: React.FC = () => {
                     }}
                   />
                   <label 
-                    htmlFor="welcome-vault-upload"
+                    htmlFor="welcome-vault-upload" 
                     className="w-full cursor-pointer bg-white/5 hover:bg-white/10 text-white border border-white/10 rounded-lg px-4 py-3 font-medium transition-colors flex items-center justify-center text-sm"
                   >
                     Restore from Backup
@@ -354,6 +360,7 @@ export const LockScreen: React.FC = () => {
                       {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
                   </div>
+                  
                   <div className="relative mt-3">
                     <input
                       type={showPassword ? "text" : "password"}
@@ -506,7 +513,7 @@ export const LockScreen: React.FC = () => {
       {/* System Status Bar */}
       <div className="absolute bottom-8 w-full flex justify-center pointer-events-none">
         <p className="text-[10px] text-zinc-600 tracking-widest uppercase font-semibold">
-          [ NODE: LOCAL ]  &bull;  AES-256  &bull;  v1.1.0
+          [ NODE: LOCAL ]  &bull;  AES-256  &bull;  v{appVersion}
         </p>
       </div>
     </div>
