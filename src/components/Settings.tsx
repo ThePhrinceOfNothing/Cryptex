@@ -5,6 +5,7 @@ import { useVault } from '../context/VaultContext';
 import { deleteVault } from '../lib/vault';
 import type { VaultSettings } from '../lib/vault';
 import { saveAppConfig } from '../lib/config';
+import { getVersion } from '@tauri-apps/api/app';
 
 export const Settings: React.FC = () => {
   const { vaultData, updateVaultData, exportVaultData, changePassword } = useVault();
@@ -22,6 +23,7 @@ export const Settings: React.FC = () => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [passwordError, setPasswordError] = useState('');
   const [passwordSuccess, setPasswordSuccess] = useState(false);
+  const [appVersion, setAppVersion] = useState<string>('...');
 
   useEffect(() => {
     setWorkspaceName(settings.workspaceName || 'My Workspace');
@@ -31,6 +33,10 @@ export const Settings: React.FC = () => {
     setAutoLockTimer(settings.autoLockTimer || '5 min');
     setCurrency(settings.currency || 'USD');
   }, [vaultData?.settings]);
+
+  useEffect(() => {
+    getVersion().then(setAppVersion).catch(console.error);
+  }, []);
 
   const handleUpdate = async (updates: Partial<VaultSettings>) => {
     const newSettings = {
@@ -318,7 +324,7 @@ export const Settings: React.FC = () => {
           </div>
           <div className="bg-white dark:bg-[#121214] border border-zinc-200 rounded-xl p-6 shadow-sm">
             <h4 className="text-sm font-medium text-gray-900 dark:text-zinc-100">Enclave</h4>
-            <p className="text-xs text-gray-500 dark:text-zinc-500 mt-0.5">Version 1.1.0 • Local-First Architecture</p>
+            <p className="text-xs text-gray-500 dark:text-zinc-500 mt-0.5">Version {appVersion} • Local-First Architecture</p>
           </div>
         </section>
 
