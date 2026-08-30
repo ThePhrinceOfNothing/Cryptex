@@ -8,6 +8,8 @@ import { ShieldAlert, Eye, EyeOff, User, Hexagon } from 'lucide-react';
 import logoUrl from '../assets/logo.svg';
 import { motion, AnimatePresence, useAnimation } from 'framer-motion';
 import { WebThreads } from './WebThreads';
+import { check } from '@tauri-apps/plugin-updater';
+import { DownloadCloud } from 'lucide-react';
 
 export const LockScreen: React.FC = () => {
   const { unlockVault } = useVault();
@@ -21,12 +23,29 @@ export const LockScreen: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
+  const [updateAvailable, setUpdateAvailable] = useState<any>(null);
+  const [isUpdating, setIsUpdating] = useState(false);
+
   const controls = useAnimation();
   const [time, setTime] = useState(new Date());
 
   useEffect(() => {
     const timer = setInterval(() => setTime(new Date()), 1000);
     return () => clearInterval(timer);
+  }, []);
+
+  useEffect(() => {
+    const checkForUpdates = async () => {
+      try {
+        const update = await check();
+        if (update?.available) {
+          setUpdateAvailable(update);
+        }
+      } catch (err) {
+        console.error("Failed to check for updates:", err);
+      }
+    };
+    checkForUpdates();
   }, []);
 
   useEffect(() => {
@@ -111,6 +130,17 @@ export const LockScreen: React.FC = () => {
     );
   }
 
+  const handleUpdateApp = async () => {
+    if (!updateAvailable) return;
+    setIsUpdating(true);
+    try {
+      await updateAvailable.downloadAndInstall();
+    } catch (err) {
+      console.error("Failed to install update:", err);
+      setIsUpdating(false);
+    }
+  };
+
   const containerVariants: any = {
     initial: { opacity: 0, scale: 0.95 },
     animate: { opacity: 1, scale: 1, transition: { duration: 0.4, ease: "easeOut" } },
@@ -136,6 +166,42 @@ export const LockScreen: React.FC = () => {
           mouseStrength={0.4}
         />
       </div>
+
+      {/* Update Pill */}
+      <AnimatePresence>
+        {updateAvailable && (
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="absolute top-8 right-8 z-50"
+          >
+            <button 
+              onClick={handleUpdateApp}
+              disabled={isUpdating}
+              className="group flex items-center gap-3 bg-black/40 backdrop-blur-xl border border-[#008EFF]/30 hover:bg-[#008EFF]/10 hover:border-[#008EFF] px-4 py-2.5 rounded-full shadow-2xl transition-all"
+            >
+              <div className="w-6 h-6 rounded-full bg-[#008EFF]/20 flex items-center justify-center text-[#008EFF] group-hover:scale-110 transition-transform">
+                {isUpdating ? (
+                  <div className="animate-spin rounded-full h-3 w-3 border-t-2 border-[#008EFF] border-r-transparent"></div>
+                ) : (
+                  <DownloadCloud size={12} strokeWidth={2.5} />
+                )}
+              </div>
+              <div className="text-left">
+                <p className="text-[10px] text-[#008EFF] uppercase tracking-widest font-bold">
+                  {isUpdating ? "Installing Update..." : "Update Available"}
+                </p>
+                {!isUpdating && (
+                  <p className="text-xs text-white font-medium">
+                    v{updateAvailable.version} Ready to Install
+                  </p>
+                )}
+              </div>
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Glassmorphism Container */}
       <div className="relative z-10 w-full max-w-sm px-4">
