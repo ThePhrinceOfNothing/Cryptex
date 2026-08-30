@@ -61,6 +61,10 @@ export const LockScreen: React.FC = () => {
     }).catch(console.error);
   }, []);
 
+  useEffect(() => {
+    getVersion().then(setAppVersion).catch(console.error);
+  }, []);
+
   const triggerErrorShake = () => {
     controls.start({
       x: [0, -8, 8, -8, 8, 0],
@@ -149,9 +153,7 @@ export const LockScreen: React.FC = () => {
     exit: { opacity: 0, scale: 0.95, transition: { duration: 0.3, ease: 'easeIn' } }
   };
 
-  useEffect(() => {
-    getVersion().then(setAppVersion).catch(console.error);
-  }, []);
+
 
   return (
     <div className="relative w-screen h-screen overflow-hidden flex items-center justify-center bg-[#050507]">
