@@ -33,10 +33,12 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ""
         with:
           tagName: ${{ github.ref_name }}
           releaseName: "Enclave ${{ github.ref_name }}"
           releaseBody: "Automated release of Enclave."
           releaseDraft: false
           prerelease: false
+          includeUpdaterJson: true
           args: --target x86_64-pc-windows-msvc
