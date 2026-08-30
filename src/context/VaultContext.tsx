@@ -106,7 +106,9 @@ export const VaultProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         await saveAppConfig({
           workspaceName: data.settings.workspaceName,
           subtitle: data.settings.subtitle,
-          avatarBase64: data.settings.avatarBase64
+          avatarBase64: data.settings.avatarBase64,
+          accentColor: data.settings.accentColor,
+          theme: data.settings.theme
         });
       } catch (err) {
         console.error("Failed to sync config on unlock:", err);

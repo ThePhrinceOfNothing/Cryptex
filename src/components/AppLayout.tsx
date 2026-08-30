@@ -4,17 +4,38 @@ import { LayoutDashboard, Lock, StickyNote, CheckSquare, Calendar, DollarSign, C
 import { motion, AnimatePresence } from 'framer-motion';
 import { useVault } from '../context/VaultContext';
 import { GlobalSearch } from './GlobalSearch';
+import ShinyText from './ShinyText';
+import { UpdateLogsModal } from './UpdateLogsModal';
 
 interface AppLayoutProps {
-  children?: ReactNode;
-  middlePane?: ReactNode;
+  children: ReactNode;
   activeTab: string;
-  setActiveTab: (tab: string) => void;
+  setActiveTab: (tab: string, action?: 'create') => void;
+  middlePane?: ReactNode;
 }
 
 export const AppLayout: React.FC<AppLayoutProps> = ({ children, middlePane, activeTab, setActiveTab }) => {
   const [isMiddlePaneOpen, setIsMiddlePaneOpen] = useState(true);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [farewellMessage, setFarewellMessage] = useState('');
   const { vaultData, lockVault, lockCountdown } = useVault();
+
+  const farewellMessages = [
+    "Goodbye",
+    "See you later",
+    "Stay secure",
+    "Until next time",
+    "Catch you on the flip side",
+    "Signing off"
+  ];
+
+  const handleLockRequest = () => {
+    setFarewellMessage(farewellMessages[Math.floor(Math.random() * farewellMessages.length)]);
+    setIsLoggingOut(true);
+    setTimeout(() => {
+      lockVault();
+    }, 2500);
+  };
 
   const workspaceName = vaultData?.settings?.workspaceName || 'My Workspace';
   const subtitle = vaultData?.settings?.subtitle || 'Personal Vault';
@@ -31,6 +52,24 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children, middlePane, acti
 
   return (
     <>
+      <UpdateLogsModal />
+      <AnimatePresence>
+        {isLoggingOut && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[99999] bg-white dark:bg-[#050507] flex items-center justify-center"
+          >
+            <ShinyText 
+              text={farewellMessage} 
+              speed={2} 
+              className="text-4xl font-bold font-sans tracking-tight text-gray-900 dark:text-white" 
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <GlobalSearch onNavigate={setActiveTab} />
       {/* Auto-Lock Warning Banner */}
       <AnimatePresence>
@@ -89,9 +128,10 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children, middlePane, acti
                   key={item.name}
                   onClick={() => setActiveTab(item.name)}
                   whileHover="hover"
+                  style={isActive ? { backgroundColor: `${vaultData?.settings?.accentColor || '#008EFF'}1A` } : {}}
                   className={`tour-sidebar-${item.name.toLowerCase().replace(/\s+/g, '-')} w-full flex items-center gap-3 px-4 py-2 rounded-md transition-all border-l-[3px] ${
                     isActive 
-                      ? 'bg-blue-50 dark:bg-accent/10 text-accent font-medium border-accent' 
+                      ? 'text-accent font-medium border-accent' 
                       : 'border-transparent text-gray-600 dark:text-zinc-400 hover:bg-gray-200/50 dark:hover:bg-zinc-800/50 hover:text-gray-900 dark:hover:text-zinc-100'
                   }`}
                 >
@@ -111,9 +151,10 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children, middlePane, acti
               <motion.button
                 onClick={() => setActiveTab('Settings')}
                 whileHover="hover"
+                style={activeTab === 'Settings' ? { backgroundColor: `${vaultData?.settings?.accentColor || '#008EFF'}1A` } : {}}
                 className={`tour-sidebar-settings w-full flex items-center gap-3 px-4 py-2 rounded-md transition-all border-l-[3px] ${
                   activeTab === 'Settings' 
-                    ? 'bg-blue-50 dark:bg-accent/10 text-accent font-medium border-accent' 
+                    ? 'text-accent font-medium border-accent' 
                     : 'border-transparent text-gray-600 dark:text-zinc-400 hover:bg-gray-200/50 dark:hover:bg-zinc-800/50 hover:text-gray-900 dark:hover:text-zinc-100'
                 }`}
               >
@@ -128,7 +169,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children, middlePane, acti
               </motion.button>
               
               <motion.button
-                onClick={lockVault}
+                onClick={handleLockRequest}
                 whileHover="hover"
                 className="tour-lock-button w-full flex items-center gap-3 px-4 py-2 rounded-md transition-all border-l-[3px] border-transparent text-gray-600 dark:text-zinc-400 hover:bg-red-50 dark:hover:bg-red-500/10 hover:text-red-600 dark:hover:text-red-400 group"
               >
@@ -169,7 +210,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children, middlePane, acti
 
         {/* RIGHT PANE: Main Workspace */}
         <main className="flex-1 bg-gray-50 dark:bg-zinc-900/50 flex flex-col overflow-hidden relative">
-          <div className="flex-1 overflow-y-auto">
+          <div className="flex-1 overflow-y-scroll">
             {children}
           </div>
         </main>

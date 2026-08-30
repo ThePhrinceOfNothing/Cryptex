@@ -56,6 +56,14 @@ export const LockScreen: React.FC = () => {
         setStep('welcome');
       } else {
         setAppConfig(config);
+        if (config?.accentColor) {
+          document.documentElement.style.setProperty('--color-accent', config.accentColor);
+        }
+        if (config?.theme === 'dark') {
+          document.documentElement.classList.add('dark');
+        } else {
+          document.documentElement.classList.remove('dark');
+        }
         setStep('greeting');
       }
     }).catch(console.error);
@@ -160,9 +168,9 @@ export const LockScreen: React.FC = () => {
       {/* Dynamic WebGL Background */}
       <div className="absolute inset-0 z-0">
         <WebThreads
-          color1="#008EFF"
-          color2="#003b73"
-          color3="#ffffff"
+          color1={appConfig?.accentColor || '#008EFF'}
+          color2={appConfig?.accentColor ? `${appConfig.accentColor}80` : '#003b73'}
+          color3="#FFFFFF"
           backgroundColor="#050507"
           speed={0.2}
           threadCount={6}
@@ -186,9 +194,9 @@ export const LockScreen: React.FC = () => {
             <button 
               onClick={handleUpdateApp}
               disabled={isUpdating}
-              className="group flex items-center gap-3 bg-black/40 backdrop-blur-xl border border-[#008EFF]/30 hover:bg-[#008EFF]/10 hover:border-[#008EFF] px-4 py-2.5 rounded-full shadow-2xl transition-all"
+              className="group flex items-center gap-3 bg-[#050507]/40 backdrop-blur-xl border border-accent/30 hover:bg-accent/10 hover:border-accent px-4 py-2.5 rounded-full shadow-2xl transition-all"
             >
-              <div className="w-6 h-6 rounded-full bg-[#008EFF]/20 flex items-center justify-center text-[#008EFF] group-hover:scale-110 transition-transform">
+              <div className="w-6 h-6 rounded-full bg-accent/20 flex items-center justify-center text-accent group-hover:scale-110 transition-transform">
                 {isUpdating ? (
                   <div className="animate-spin rounded-full h-3 w-3 border-t-2 border-[#008EFF] border-r-transparent"></div>
                 ) : (
@@ -196,7 +204,7 @@ export const LockScreen: React.FC = () => {
                 )}
               </div>
               <div className="text-left">
-                <p className="text-[10px] text-[#008EFF] uppercase tracking-widest font-bold">
+                <p className="text-[10px] text-accent uppercase tracking-widest font-bold">
                   {isUpdating ? "Installing Update..." : "Update Available"}
                 </p>
                 {!isUpdating && (
@@ -222,7 +230,7 @@ export const LockScreen: React.FC = () => {
           </p>
         </div>
 
-        <div className="bg-black/40 backdrop-blur-2xl border border-white/10 rounded-2xl shadow-2xl p-10 w-full flex flex-col items-center text-center">
+        <div className="bg-[#050507]/40 backdrop-blur-2xl border border-white/10 rounded-2xl shadow-2xl p-10 w-full flex flex-col items-center text-center">
           
           {/* Card Header Branding */}
           <div className="flex items-center gap-2 text-zinc-500 text-[10px] font-bold tracking-widest uppercase mb-8">
@@ -251,7 +259,7 @@ export const LockScreen: React.FC = () => {
                 <div className="w-full flex flex-col gap-3">
                   <button 
                     onClick={() => setStep('create')}
-                    className="w-full bg-[#008EFF] hover:bg-[#007acc] text-white rounded-lg px-4 py-3 font-medium transition-colors"
+                    className="w-full bg-accent hover:bg-accent/80 text-white rounded-lg px-4 py-3 font-medium transition-colors"
                   >
                     Initialize Vault
                   </button>
@@ -340,7 +348,7 @@ export const LockScreen: React.FC = () => {
                     type="text"
                     value={workspaceName}
                     onChange={(e) => setWorkspaceName(e.target.value)}
-                    className="w-full bg-black/50 border border-white/10 text-white rounded-lg px-4 py-3 mt-4 outline-none transition-all focus:border-[#008EFF] focus:ring-1 focus:ring-[#008EFF]/50 text-sm placeholder-zinc-500 text-center"
+                    className="w-full bg-[#050507]/50 border border-white/10 text-white rounded-lg px-4 py-3 mt-4 outline-none transition-all focus:border-accent focus:ring-1 focus:ring-accent/50 text-sm placeholder-zinc-500 text-center"
                     placeholder="Workspace Name"
                     disabled={isLoading}
                     autoFocus
@@ -353,7 +361,7 @@ export const LockScreen: React.FC = () => {
                         setPassword(e.target.value);
                         if (error) setError(null);
                       }}
-                      className="w-full bg-black/50 border border-white/10 text-white rounded-lg px-4 py-3 outline-none transition-all focus:border-[#008EFF] focus:ring-1 focus:ring-[#008EFF]/50 text-sm placeholder-zinc-500 text-center"
+                      className="w-full bg-[#050507]/50 border border-white/10 text-white rounded-lg px-4 py-3 outline-none transition-all focus:border-accent focus:ring-1 focus:ring-accent/50 text-sm placeholder-zinc-500 text-center"
                       placeholder="Master Password"
                       disabled={isLoading}
                     />
@@ -370,7 +378,7 @@ export const LockScreen: React.FC = () => {
                         setConfirmPassword(e.target.value);
                         if (error) setError(null);
                       }}
-                      className="w-full bg-black/50 border border-white/10 text-white rounded-lg px-4 py-3 outline-none transition-all focus:border-[#008EFF] focus:ring-1 focus:ring-[#008EFF]/50 text-sm placeholder-zinc-500 text-center"
+                      className="w-full bg-[#050507]/50 border border-white/10 text-white rounded-lg px-4 py-3 outline-none transition-all focus:border-accent focus:ring-1 focus:ring-accent/50 text-sm placeholder-zinc-500 text-center"
                       placeholder="Confirm Master Password"
                       disabled={isLoading}
                     />
@@ -380,7 +388,7 @@ export const LockScreen: React.FC = () => {
                     type="submit"
                     disabled={isLoading}
                     whileTap={{ scale: isLoading ? 1 : 0.98 }}
-                    className="w-full bg-[#008EFF] hover:bg-[#007acc] text-white rounded-lg px-4 py-3 mt-6 font-medium transition-colors disabled:opacity-50"
+                    className="w-full bg-accent hover:bg-accent/80 text-white rounded-lg px-4 py-3 mt-6 font-medium transition-colors disabled:opacity-50"
                   >
                     {isLoading ? (
                       <div className="w-full flex justify-center">
@@ -413,7 +421,7 @@ export const LockScreen: React.FC = () => {
                 exit="exit"
                 className="flex flex-col items-center w-full"
               >
-                <div className="w-16 h-16 rounded-full bg-[#008EFF]/10 border border-[#008EFF]/20 flex items-center justify-center text-[#008EFF] mb-6 overflow-hidden">
+                <div className="w-16 h-16 rounded-full bg-accent/10 border border-accent/20 flex items-center justify-center text-accent mb-6 overflow-hidden">
                   {appConfig?.avatarBase64 ? (
                     <img src={appConfig.avatarBase64} alt="Avatar" className="w-full h-full object-cover" />
                   ) : (
@@ -425,7 +433,7 @@ export const LockScreen: React.FC = () => {
                 <motion.button
                   onClick={() => setStep('unlock')}
                   whileTap={{ scale: 0.98 }}
-                  className="w-full bg-[#008EFF] hover:bg-[#007acc] text-white rounded-lg px-4 py-3 mt-8 font-medium transition-colors"
+                  className="w-full bg-accent hover:bg-accent/80 text-white rounded-lg px-4 py-3 mt-8 font-medium transition-colors"
                 >
                   Log In
                 </motion.button>
@@ -441,7 +449,7 @@ export const LockScreen: React.FC = () => {
                 exit="exit"
                 className="flex flex-col items-center w-full"
               >
-                <div className="w-20 h-20 rounded-full bg-[#008EFF]/10 border border-[#008EFF]/20 flex items-center justify-center text-[#008EFF] mb-4 overflow-hidden">
+                <div className="w-20 h-20 rounded-full bg-accent/10 border border-accent/20 flex items-center justify-center text-accent mb-4 overflow-hidden">
                   {appConfig?.avatarBase64 ? (
                     <img src={appConfig.avatarBase64} alt="Avatar" className="w-full h-full object-cover" />
                   ) : (
@@ -479,7 +487,7 @@ export const LockScreen: React.FC = () => {
                         setPassword(e.target.value);
                         if (error) setError(null);
                       }}
-                      className="w-full bg-black/50 border border-white/10 text-white rounded-lg px-4 py-3 outline-none transition-all focus:border-[#008EFF] focus:ring-1 focus:ring-[#008EFF]/50 text-sm placeholder-zinc-500 text-center"
+                      className="w-full bg-[#050507]/50 border border-white/10 text-white rounded-lg px-4 py-3 outline-none transition-all focus:border-accent focus:ring-1 focus:ring-accent/50 text-sm placeholder-zinc-500 text-center"
                       placeholder="Master Password"
                       disabled={isLoading}
                       autoFocus
@@ -493,7 +501,7 @@ export const LockScreen: React.FC = () => {
                     type="submit"
                     disabled={isLoading}
                     whileTap={{ scale: isLoading ? 1 : 0.98 }}
-                    className="w-full bg-[#008EFF] hover:bg-[#007acc] text-white rounded-lg px-4 py-3 mt-6 font-medium transition-colors disabled:opacity-50"
+                    className="w-full bg-accent hover:bg-accent/80 text-white rounded-lg px-4 py-3 mt-6 font-medium transition-colors disabled:opacity-50"
                   >
                     {isLoading ? (
                       <div className="w-full flex justify-center">

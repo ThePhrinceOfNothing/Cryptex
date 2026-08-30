@@ -8,7 +8,7 @@ export default {
   theme: {
     extend: {
       colors: {
-        accent: '#008EFF',
+        accent: 'var(--color-accent, #008EFF)',
         sidebar: '#f4f4f5', // zinc-50
       },
       fontFamily: {
@@ -16,5 +16,7 @@ export default {
       }
     },
   },
-  plugins: [],
+  plugins: [
+    require('@tailwindcss/typography'),
+  ],
 }

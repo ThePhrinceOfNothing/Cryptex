@@ -19,6 +19,8 @@ export interface VaultSettings {
   avatarBase64?: string;
   hasSeenTour?: boolean;
   theme?: 'light' | 'dark';
+  accentColor?: string;
+  lastSeenVersion?: string;
 }
 
 export interface VaultData {

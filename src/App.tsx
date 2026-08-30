@@ -1,40 +1,63 @@
 import React, { useState, useEffect } from 'react';
 import { VaultProvider, useVault } from './context/VaultContext';
 import { LockScreen } from './components/LockScreen';
-import { Dashboard } from './components/Dashboard';
-import { AppLayout } from './components/AppLayout';
-import { MyVaultList, MyVaultDetails } from './components/MyVault';
-import { NotesList, NotesEditor } from './components/Notes';
-import { Tasks } from './components/Tasks';
-import { Income } from './components/Income';
-import { Calendar } from './components/Calendar';
-import { Attachments } from './components/Attachments';
-import { Settings } from './components/Settings';
-import { OnboardingTour } from './components/OnboardingTour';
+const LazyDashboard = React.lazy(() => import('./components/Dashboard').then(m => ({ default: m.Dashboard })));
+const LazyAppLayout = React.lazy(() => import('./components/AppLayout').then(m => ({ default: m.AppLayout })));
+const LazyMyVaultList = React.lazy(() => import('./components/MyVault').then(m => ({ default: m.MyVaultList })));
+const LazyMyVaultDetails = React.lazy(() => import('./components/MyVault').then(m => ({ default: m.MyVaultDetails })));
+const LazyNotesList = React.lazy(() => import('./components/Notes').then(m => ({ default: m.NotesList })));
+const LazyNotesEditor = React.lazy(() => import('./components/Notes').then(m => ({ default: m.NotesEditor })));
+const LazyTasks = React.lazy(() => import('./components/Tasks').then(m => ({ default: m.Tasks })));
+const LazyIncome = React.lazy(() => import('./components/Income').then(m => ({ default: m.Income })));
+const LazyCalendar = React.lazy(() => import('./components/Calendar').then(m => ({ default: m.Calendar })));
+const LazyAttachments = React.lazy(() => import('./components/Attachments').then(m => ({ default: m.Attachments })));
+const LazySettings = React.lazy(() => import('./components/Settings').then(m => ({ default: m.Settings })));
+const LazyOnboardingTour = React.lazy(() => import('./components/OnboardingTour').then(m => ({ default: m.OnboardingTour })));
 import { motion, AnimatePresence } from 'framer-motion';
 import { pageFadeIn } from './lib/AnimationUtils';
+import { getCurrentWindow } from '@tauri-apps/api/window';
 
 function AppContent() {
   const { isLocked, vaultData } = useVault();
-  const [activeTab, setActiveTab] = useState<string>('Dashboard');
+  const [activeTab, setActiveTabState] = useState<string>('Dashboard');
   const [selectedCredentialId, setSelectedCredentialId] = useState<string | null>(null);
   const [isCreating, setIsCreating] = useState(false);
 
-  useEffect(() => {
-    if (vaultData?.settings?.theme === 'dark') {
-      document.documentElement.classList.add('dark');
+  const setActiveTab = (tab: string, action?: 'create') => {
+    setActiveTabState(tab);
+    if (action === 'create') {
+      setIsCreating(true);
+      setSelectedCredentialId(null);
     } else {
-      document.documentElement.classList.remove('dark');
+      setIsCreating(false);
+      setSelectedCredentialId(null);
+    }
+  };
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'p') {
+        e.preventDefault();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+  useEffect(() => {
+    if (vaultData) {
+      if (vaultData.settings?.theme === 'dark') {
+        document.documentElement.classList.add('dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+      }
     }
   }, [vaultData?.settings?.theme]);
 
-  // Reset state when switching tabs
   React.useEffect(() => {
-    setSelectedCredentialId(null);
-    setIsCreating(false);
-  }, [activeTab]);
+    // Show window once React is ready to avoid white flash
+    getCurrentWindow().show();
 
-  React.useEffect(() => {
     if (vaultData?.settings) {
       const fs = vaultData.settings.fontSize;
       if (fs === 'Small') document.documentElement.style.fontSize = '14px';
@@ -44,8 +67,11 @@ function AppContent() {
       const density = vaultData.settings.uiDensity;
       if (density === 'Compact') document.documentElement.setAttribute('data-density', 'compact');
       else document.documentElement.removeAttribute('data-density');
+      
+      const color = vaultData.settings.accentColor || '#008EFF';
+      document.documentElement.style.setProperty('--color-accent', color);
     }
-  }, [vaultData?.settings?.fontSize, vaultData?.settings?.uiDensity]);
+  }, [vaultData?.settings?.fontSize, vaultData?.settings?.uiDensity, vaultData?.settings?.accentColor]);
 
   // Render based on state
 
@@ -53,10 +79,10 @@ function AppContent() {
   let middlePane = undefined;
 
   if (activeTab === 'Dashboard') {
-    content = <Dashboard />;
+    content = <LazyDashboard />;
   } else if (activeTab === 'My Vault') {
     middlePane = (
-      <MyVaultList 
+      <LazyMyVaultList 
         selectedId={selectedCredentialId} 
         onSelect={(id) => {
           setSelectedCredentialId(id);
@@ -69,7 +95,7 @@ function AppContent() {
       />
     );
     content = (
-      <MyVaultDetails 
+      <LazyMyVaultDetails 
         selectedId={selectedCredentialId} 
         isCreating={isCreating}
         onSaveComplete={(id) => {
@@ -83,7 +109,7 @@ function AppContent() {
     );
   } else if (activeTab === 'Notes') {
     middlePane = (
-      <NotesList 
+      <LazyNotesList 
         selectedId={selectedCredentialId} 
         onSelect={(id) => {
           setSelectedCredentialId(id);
@@ -96,7 +122,7 @@ function AppContent() {
       />
     );
     content = (
-      <NotesEditor 
+      <LazyNotesEditor 
         selectedId={selectedCredentialId} 
         isCreating={isCreating}
         onSaveComplete={(id) => {
@@ -109,15 +135,15 @@ function AppContent() {
       />
     );
   } else if (activeTab === 'Tasks') {
-    content = <Tasks />;
+    content = <LazyTasks />;
   } else if (activeTab === 'Income') {
-    content = <Income />;
+    content = <LazyIncome />;
   } else if (activeTab === 'Calendar') {
-    content = <Calendar />;
+    content = <LazyCalendar />;
   } else if (activeTab === 'Secure Docs') {
-    content = <Attachments />;
+    content = <LazyAttachments />;
   } else if (activeTab === 'Settings') {
-    content = <Settings />;
+    content = <LazySettings />;
   } else {
     content = <div className="p-8 text-gray-500 dark:text-zinc-500">Coming soon...</div>;
   }
@@ -127,33 +153,36 @@ function AppContent() {
       {isLocked ? (
         <LockScreen key="lockscreen" />
       ) : (
-        <motion.div 
-          key="app"
-          initial={{ opacity: 0, scale: 0.98 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.4, ease: 'easeOut' }}
-          className="h-full w-full"
-        >
-          <AppLayout 
-            activeTab={activeTab} 
-            setActiveTab={setActiveTab}
-            middlePane={middlePane}
+          <motion.div
+            key="app"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.4, ease: 'easeOut' }}
+            className="h-full w-full"
           >
-            <OnboardingTour />
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={activeTab}
-                variants={pageFadeIn}
-                initial="initial"
-                animate="animate"
-                exit="exit"
-                className="h-full w-full"
+            <React.Suspense fallback={<div className="w-full h-screen flex items-center justify-center bg-white dark:bg-[#0c0c0e]"><div className="animate-spin rounded-full h-8 w-8 border-t-2 border-accent"></div></div>}>
+              <LazyAppLayout 
+                activeTab={activeTab} 
+                setActiveTab={setActiveTab}
+                middlePane={middlePane}
               >
-                {content}
-              </motion.div>
-            </AnimatePresence>
-          </AppLayout>
-        </motion.div>
+                <LazyOnboardingTour />
+                <AnimatePresence mode="wait">
+                  <motion.div
+                    key={activeTab}
+                    initial="initial"
+                    animate="animate"
+                    exit="exit"
+                    variants={pageFadeIn}
+                    className="h-full w-full"
+                  >
+                    {content}
+                  </motion.div>
+                </AnimatePresence>
+              </LazyAppLayout>
+            </React.Suspense>
+          </motion.div>
       )}
     </AnimatePresence>
   );

@@ -4,6 +4,8 @@ export interface AppConfig {
   workspaceName?: string;
   subtitle?: string;
   avatarBase64?: string;
+  accentColor?: string;
+  theme?: string;
 }
 
 export async function loadAppConfig(): Promise<AppConfig | null> {

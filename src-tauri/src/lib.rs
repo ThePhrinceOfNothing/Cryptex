@@ -64,6 +64,9 @@ pub struct AppConfig {
     subtitle: Option<String>,
     #[serde(rename = "avatarBase64")]
     avatar_base64: Option<String>,
+    #[serde(rename = "accentColor")]
+    accent_color: Option<String>,
+    theme: Option<String>,
 }
 
 fn get_config_path(app: &AppHandle) -> Result<PathBuf, String> {

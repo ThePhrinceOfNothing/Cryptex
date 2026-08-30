@@ -73,7 +73,7 @@ export const OnboardingTour: React.FC = () => {
     }
   };
 
-  if (hasSeenTour) return null;
+  if (!vaultData || hasSeenTour) return null;
 
   return (
     <Joyride

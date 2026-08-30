@@ -59,7 +59,9 @@ export const Settings: React.FC = () => {
       await saveAppConfig({
         workspaceName: newSettings.workspaceName,
         subtitle: newSettings.subtitle,
-        avatarBase64: newSettings.avatarBase64
+        avatarBase64: newSettings.avatarBase64,
+        accentColor: newSettings.accentColor,
+        theme: newSettings.theme
       });
     } catch (error) {
       console.error('Failed to sync app config:', error);
@@ -201,7 +203,36 @@ export const Settings: React.FC = () => {
               </select>
             </div>
             
-            <hr className="border-gray-100 dark:border-white/5" />
+            <div className="flex items-center justify-between">
+              <div>
+                <h4 className="text-sm font-medium text-gray-900 dark:text-zinc-100">Accent Color</h4>
+                <p className="text-xs text-gray-500 dark:text-zinc-500 mt-0.5">Customize the global glow and accent colors.</p>
+              </div>
+              <div className="flex items-center gap-2">
+                {[
+                  { name: 'Enclave Blue', hex: '#008EFF' },
+                  { name: 'Matrix Green', hex: '#10B981' },
+                  { name: 'Synthwave Pink', hex: '#EC4899' },
+                  { name: 'Cyberpunk Yellow', hex: '#F59E0B' },
+                  { name: 'Amethyst Purple', hex: '#8B5CF6' }
+                ].map((color) => (
+                  <button
+                    key={color.hex}
+                    onClick={() => handleUpdate({ accentColor: color.hex })}
+                    className={`w-6 h-6 rounded-full border-2 transition-all ${
+                      (vaultData?.settings?.accentColor || '#008EFF') === color.hex
+                        ? 'border-white dark:border-zinc-300 scale-110 shadow-sm'
+                        : 'border-transparent hover:scale-105'
+                    }`}
+                    style={{ backgroundColor: color.hex }}
+                    title={color.name}
+                  />
+                ))}
+              </div>
+            </div>
+
+            <div className="border-t border-gray-100 dark:border-white/5 my-2" />
+            
             <div className="flex items-center justify-between">
               <div>
                 <h4 className="text-sm font-medium text-gray-900 dark:text-zinc-100">Base Font Size</h4>
