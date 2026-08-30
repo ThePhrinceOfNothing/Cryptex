@@ -4,7 +4,8 @@ import type { VaultData } from '../lib/vault';
 import { loadAppConfig, saveAppConfig } from '../lib/config';
 import type { AppConfig } from '../lib/config';
 import { useVault } from '../context/VaultContext';
-import { ShieldAlert, Hexagon, Eye, EyeOff, User } from 'lucide-react';
+import { ShieldAlert, Eye, EyeOff, User, Hexagon } from 'lucide-react';
+import logoUrl from '../assets/logo.svg';
 import { motion, AnimatePresence, useAnimation } from 'framer-motion';
 import { WebThreads } from './WebThreads';
 
@@ -21,6 +22,12 @@ export const LockScreen: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
 
   const controls = useAnimation();
+  const [time, setTime] = useState(new Date());
+
+  useEffect(() => {
+    const timer = setInterval(() => setTime(new Date()), 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   useEffect(() => {
     Promise.all([vaultExists(), loadAppConfig()]).then(([hasVault, config]) => {
@@ -132,8 +139,24 @@ export const LockScreen: React.FC = () => {
 
       {/* Glassmorphism Container */}
       <div className="relative z-10 w-full max-w-sm px-4">
+        {/* OS Clock */}
+        <div className="flex flex-col items-center mb-8">
+          <h1 className="text-5xl font-light text-white tracking-wider mb-2">
+            {time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+          </h1>
+          <p className="text-xs text-zinc-400 uppercase tracking-[0.2em]">
+            {time.toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric' })}
+          </p>
+        </div>
+
         <div className="bg-black/40 backdrop-blur-2xl border border-white/10 rounded-2xl shadow-2xl p-10 w-full flex flex-col items-center text-center">
           
+          {/* Card Header Branding */}
+          <div className="flex items-center gap-2 text-zinc-500 text-[10px] font-bold tracking-widest uppercase mb-8">
+            <Hexagon className="w-3 h-3 text-accent" />
+            <span>ENCLAVE</span>
+          </div>
+
           <AnimatePresence mode="wait">
             {(step === 'welcome') && (
               <motion.div 
@@ -144,20 +167,66 @@ export const LockScreen: React.FC = () => {
                 exit="exit"
                 className="flex flex-col items-center w-full"
               >
-                <Hexagon className="w-12 h-12 text-[#008EFF]" strokeWidth={1.5} />
+                <img src={logoUrl} alt="Enclave Logo" className="w-14 h-14 object-contain" />
                 <h1 className="text-white font-semibold text-xl mt-4 tracking-tight">
                   Enclave
                 </h1>
-                <p className="text-sm text-zinc-400 mt-2 leading-relaxed">
-                  Welcome to your zero-knowledge workspace.
+                <p className="text-xs text-zinc-400 mt-2 mb-8 leading-relaxed">
+                  An isolated, zero-knowledge workspace where your data remains fully sovereign.
                 </p>
-                <motion.button
-                  onClick={() => setStep('create')}
-                  whileTap={{ scale: 0.98 }}
-                  className="w-full bg-[#008EFF] hover:bg-[#007acc] text-white rounded-lg px-4 py-3 mt-8 font-medium transition-colors"
-                >
-                  Setup Workspace
-                </motion.button>
+
+                <div className="w-full flex flex-col gap-3">
+                  <button 
+                    onClick={() => setStep('create')}
+                    className="w-full bg-[#008EFF] hover:bg-[#007acc] text-white rounded-lg px-4 py-3 font-medium transition-colors"
+                  >
+                    Initialize Vault
+                  </button>
+
+                  <div className="relative my-4">
+                    <div className="absolute inset-0 flex items-center">
+                      <div className="w-full border-t border-white/10"></div>
+                    </div>
+                    <div className="relative flex justify-center text-xs">
+                      <span className="px-2 bg-[#050507] text-zinc-500 font-medium tracking-wide">OR</span>
+                    </div>
+                  </div>
+
+                  <input 
+                    type="file" 
+                    accept=".vault,application/json" 
+                    className="hidden" 
+                    id="welcome-vault-upload"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        const reader = new FileReader();
+                        reader.onload = async (event) => {
+                          try {
+                            const json = JSON.parse(event.target?.result as string);
+                            if (json.salt && json.iv && json.ciphertext) {
+                              const { importVault } = await import('../lib/vault');
+                              await importVault(json);
+                              window.location.reload();
+                            } else {
+                              alert("Invalid vault backup file.");
+                            }
+                          } catch(err) {
+                            alert("Failed to parse backup file.");
+                          }
+                        };
+                        reader.readAsText(file);
+                        e.target.value = '';
+                      }
+                    }}
+                  />
+                  <label 
+                    htmlFor="welcome-vault-upload"
+                    className="w-full cursor-pointer bg-white/5 hover:bg-white/10 text-white border border-white/10 rounded-lg px-4 py-3 font-medium transition-colors flex items-center justify-center text-sm"
+                  >
+                    Restore from Backup
+                  </label>
+                </div>
               </motion.div>
             )}
 
@@ -170,7 +239,7 @@ export const LockScreen: React.FC = () => {
                 exit="exit"
                 className="flex flex-col items-center w-full"
               >
-                <Hexagon className="w-10 h-10 text-[#008EFF]" strokeWidth={1.5} />
+                <img src={logoUrl} alt="Enclave Logo" className="w-12 h-12 object-contain" />
                 <h1 className="text-white font-semibold text-xl mt-4 tracking-tight">
                   Configure Node
                 </h1>
@@ -228,7 +297,7 @@ export const LockScreen: React.FC = () => {
                         if (error) setError(null);
                       }}
                       className="w-full bg-black/50 border border-white/10 text-white rounded-lg px-4 py-3 outline-none transition-all focus:border-[#008EFF] focus:ring-1 focus:ring-[#008EFF]/50 text-sm placeholder-zinc-500 text-center"
-                      placeholder="Confirm Password"
+                      placeholder="Confirm Master Password"
                       disabled={isLoading}
                     />
                   </div>
@@ -244,9 +313,19 @@ export const LockScreen: React.FC = () => {
                         <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-white/50 border-r-transparent"></div>
                       </div>
                     ) : (
-                      "Initialize Enclave"
+                      "Initialize Node"
                     )}
                   </motion.button>
+                  <button 
+                    type="button" 
+                    onClick={() => {
+                      setStep('welcome');
+                      setError(null);
+                    }}
+                    className="w-full mt-3 py-2 text-xs text-zinc-500 hover:text-zinc-300 transition-colors"
+                  >
+                    Back
+                  </button>
                 </motion.form>
               </motion.div>
             )}
@@ -260,20 +339,15 @@ export const LockScreen: React.FC = () => {
                 exit="exit"
                 className="flex flex-col items-center w-full"
               >
-                <div className="w-16 h-16 rounded-full bg-[#008EFF]/10 border border-[#008EFF]/20 flex items-center justify-center text-[#008EFF] overflow-hidden shadow-sm">
+                <div className="w-16 h-16 rounded-full bg-[#008EFF]/10 border border-[#008EFF]/20 flex items-center justify-center text-[#008EFF] mb-6 overflow-hidden">
                   {appConfig?.avatarBase64 ? (
                     <img src={appConfig.avatarBase64} alt="Avatar" className="w-full h-full object-cover" />
                   ) : (
                     <User size={28} strokeWidth={1.5} />
                   )}
                 </div>
-                
-                <h1 className="text-white font-semibold text-xl mt-4 tracking-tight">
-                  {appConfig?.workspaceName || 'Enclave'}
-                </h1>
-                <p className="text-sm text-zinc-400 mt-2 leading-relaxed">
-                  {appConfig?.subtitle || 'Welcome back'}
-                </p>
+                <h2 className="text-xl font-medium text-white">Welcome back, {appConfig?.workspaceName}</h2>
+                <p className="text-xs text-zinc-400 mt-2">Node connection established.</p>
                 <motion.button
                   onClick={() => setStep('unlock')}
                   whileTap={{ scale: 0.98 }}
@@ -293,18 +367,18 @@ export const LockScreen: React.FC = () => {
                 exit="exit"
                 className="flex flex-col items-center w-full"
               >
-                <div className="w-12 h-12 rounded-full bg-[#008EFF]/10 border border-[#008EFF]/20 flex items-center justify-center text-[#008EFF] overflow-hidden shadow-sm mb-2">
+                <div className="w-20 h-20 rounded-full bg-[#008EFF]/10 border border-[#008EFF]/20 flex items-center justify-center text-[#008EFF] mb-4 overflow-hidden">
                   {appConfig?.avatarBase64 ? (
                     <img src={appConfig.avatarBase64} alt="Avatar" className="w-full h-full object-cover" />
                   ) : (
-                    <User size={20} strokeWidth={1.5} />
+                    <User size={32} strokeWidth={1.5} />
                   )}
                 </div>
-                <h1 className="text-white font-semibold text-xl mt-4 tracking-tight">
-                  {appConfig?.workspaceName || 'Enclave'}
+                <h1 className="text-white font-semibold text-xl tracking-tight">
+                  Welcome back, {appConfig?.workspaceName || 'My Workspace'}
                 </h1>
-                <p className="text-sm text-zinc-400 mt-2 mb-2 leading-relaxed">
-                  Enter your master password.
+                <p className="text-xs text-zinc-400 mt-2 mb-2 leading-relaxed">
+                  {appConfig?.subtitle || 'Personal Node'}
                 </p>
 
                 {error && (
@@ -320,10 +394,10 @@ export const LockScreen: React.FC = () => {
 
                 <motion.form 
                   onSubmit={handleUnlock} 
-                  className="w-full"
+                  className="w-full mt-4"
                   animate={controls}
                 >
-                  <div className="relative mt-4">
+                  <div className="relative">
                     <input
                       type={showPassword ? "text" : "password"}
                       value={password}
@@ -361,6 +435,13 @@ export const LockScreen: React.FC = () => {
           </AnimatePresence>
 
         </div>
+      </div>
+      
+      {/* System Status Bar */}
+      <div className="absolute bottom-8 w-full flex justify-center pointer-events-none">
+        <p className="text-[10px] text-zinc-600 tracking-widest uppercase font-semibold">
+          [ NODE: LOCAL ]  &bull;  AES-256  &bull;  v1.1.0
+        </p>
       </div>
     </div>
   );

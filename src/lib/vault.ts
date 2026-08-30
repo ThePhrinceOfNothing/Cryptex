@@ -17,6 +17,8 @@ export interface VaultSettings {
   autoLockTimer: '1 min' | '5 min' | '15 min' | 'Never';
   currency?: 'USD' | 'PHP' | 'EUR' | 'GBP' | 'JPY';
   avatarBase64?: string;
+  hasSeenTour?: boolean;
+  theme?: 'light' | 'dark';
 }
 
 export interface VaultData {
@@ -107,6 +109,10 @@ export async function exportVault(key: CryptoKey, salt: Uint8Array, data: VaultD
   a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
+}
+
+export async function importVault(payload: EncryptedPayload): Promise<void> {
+  await invoke('save_vault', { payload });
 }
 
 export async function loadVaultPayload(): Promise<EncryptedPayload> {

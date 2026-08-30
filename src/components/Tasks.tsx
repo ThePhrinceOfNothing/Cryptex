@@ -37,13 +37,13 @@ export const Tasks: React.FC = () => {
   };
 
   return (
-    <div className="max-w-3xl mx-auto p-8 h-full bg-white flex flex-col">
+    <div className="max-w-3xl mx-auto p-8 h-full bg-white dark:bg-[#121214] flex flex-col">
       <div className="mb-8 shrink-0">
-        <h1 className="text-2xl font-semibold text-gray-900 tracking-tight flex items-center gap-2">
+        <h1 className="text-2xl font-semibold text-gray-900 dark:text-zinc-100 tracking-tight flex items-center gap-2">
           <CheckSquare className="text-accent w-6 h-6" />
           Tasks
         </h1>
-        <p className="text-sm text-gray-500 mt-1">Manage your secure to-dos.</p>
+        <p className="text-sm text-gray-500 dark:text-zinc-500 mt-1">Manage your secure to-dos.</p>
       </div>
 
       <form onSubmit={handleAdd} className="flex gap-3 mb-8 shrink-0">
@@ -52,14 +52,14 @@ export const Tasks: React.FC = () => {
           value={newTask}
           onChange={(e) => setNewTask(e.target.value)}
           placeholder="Add a new task..."
-          className="flex-1 bg-white border border-gray-200 rounded-md px-4 py-3 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-shadow shadow-sm text-sm"
+          className="flex-1 bg-white dark:bg-[#121214] border border-gray-200 dark:border-white/10 rounded-md px-4 py-3 text-gray-900 dark:text-zinc-100 placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-shadow shadow-sm text-sm"
         />
         <motion.button
           type="submit"
           disabled={!newTask.trim()}
           whileHover={{ scale: newTask.trim() ? 1.02 : 1 }}
           whileTap={{ scale: newTask.trim() ? 0.97 : 1 }}
-          className="bg-accent hover:bg-blue-600 disabled:bg-gray-100 disabled:text-gray-400 text-white px-5 py-3 rounded-md transition-colors shadow-sm flex items-center gap-2 font-medium text-sm"
+          className="bg-accent hover:bg-blue-600 disabled:bg-gray-100 dark:bg-zinc-900 disabled:text-gray-400 text-white px-5 py-3 rounded-md transition-colors shadow-sm flex items-center gap-2 font-medium text-sm"
         >
           <Plus className="w-4 h-4" />
           Add Task
@@ -97,7 +97,7 @@ export const Tasks: React.FC = () => {
                       <div className={`w-5 h-5 rounded-sm flex items-center justify-center border transition-colors shrink-0 ${
                         todo.completed 
                           ? 'bg-accent border-accent' 
-                          : 'bg-white border-gray-300 group-hover:border-accent'
+                          : 'bg-white dark:bg-[#121214] border-gray-300 dark:border-white/20 group-hover:border-accent'
                       }`}>
                         {todo.completed && <Check className="w-3.5 h-3.5 text-white" />}
                       </div>

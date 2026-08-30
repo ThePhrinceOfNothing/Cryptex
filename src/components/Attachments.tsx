@@ -85,14 +85,14 @@ export const Attachments: React.FC = () => {
   };
 
   return (
-    <div className="max-w-4xl mx-auto p-8 h-full bg-white flex flex-col relative">
+    <div className="max-w-4xl mx-auto p-8 h-full bg-white dark:bg-[#121214] flex flex-col relative">
       <div className="flex justify-between items-center mb-8 shrink-0">
         <div>
-          <h1 className="text-2xl font-semibold text-gray-900 tracking-tight flex items-center gap-2">
+          <h1 className="text-2xl font-semibold text-gray-900 dark:text-zinc-100 tracking-tight flex items-center gap-2">
             <Shield className="text-accent w-6 h-6" />
             Secure Documents
           </h1>
-          <p className="text-sm text-gray-500 mt-1">Files are encrypted within your zero-knowledge vault.</p>
+          <p className="text-sm text-gray-500 dark:text-zinc-500 mt-1">Files are encrypted within your zero-knowledge vault.</p>
         </div>
         
         <input 
@@ -121,7 +121,7 @@ export const Attachments: React.FC = () => {
           placeholder="Search encrypted files..." 
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="w-full pl-9 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-md text-sm text-gray-900 focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent"
+          className="w-full pl-9 pr-4 py-2 bg-gray-50 dark:bg-zinc-900/50 border border-gray-200 dark:border-white/10 rounded-md text-sm text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent"
         />
       </div>
 
@@ -145,17 +145,17 @@ export const Attachments: React.FC = () => {
                   initial={{ opacity: 0, scale: 0.95 }}
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.95 }}
-                  className="bg-white border border-gray-200 rounded-xl p-4 flex flex-col hover:shadow-md transition-shadow group relative overflow-hidden"
+                  className="bg-white dark:bg-[#121214] border border-gray-200 dark:border-white/10 rounded-xl p-4 flex flex-col hover:shadow-md transition-shadow group relative overflow-hidden"
                 >
                   <div className="flex items-start gap-4">
-                    <div className="shrink-0 bg-gray-50 p-3 rounded-lg border border-gray-100">
+                    <div className="shrink-0 bg-gray-50 dark:bg-zinc-900/50 p-3 rounded-lg border border-gray-100">
                       {getFileIcon(attachment.type)}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <h3 className="text-sm font-semibold text-gray-900 truncate" title={attachment.name}>
+                      <h3 className="text-sm font-semibold text-gray-900 dark:text-zinc-100 truncate" title={attachment.name}>
                         {attachment.name}
                       </h3>
-                      <p className="text-xs text-gray-500 mt-1">
+                      <p className="text-xs text-gray-500 dark:text-zinc-500 mt-1">
                         {formatSize(attachment.size)} • {new Date(attachment.addedAt).toLocaleDateString()}
                       </p>
                     </div>
@@ -164,13 +164,13 @@ export const Attachments: React.FC = () => {
                   <div className="mt-4 flex gap-2">
                     <button 
                       onClick={() => handleDownload(attachment)}
-                      className="flex-1 bg-gray-50 hover:bg-accent/10 hover:text-accent border border-gray-200 hover:border-accent/30 text-gray-700 text-xs font-medium py-1.5 rounded transition-colors flex items-center justify-center gap-1"
+                      className="flex-1 bg-gray-50 dark:bg-zinc-900/50 hover:bg-accent/10 hover:text-accent border border-gray-200 dark:border-white/10 hover:border-accent/30 text-gray-700 dark:text-zinc-300 text-xs font-medium py-1.5 rounded transition-colors flex items-center justify-center gap-1"
                     >
                       <Download className="w-3.5 h-3.5" /> Decrypt & Save
                     </button>
                     <button 
                       onClick={() => handleDelete(attachment.id)}
-                      className="w-10 bg-gray-50 hover:bg-red-50 text-gray-400 hover:text-red-600 border border-gray-200 hover:border-red-200 rounded flex items-center justify-center transition-colors"
+                      className="w-10 bg-gray-50 dark:bg-zinc-900/50 hover:bg-red-50 text-gray-400 hover:text-red-600 border border-gray-200 dark:border-white/10 hover:border-red-200 rounded flex items-center justify-center transition-colors"
                       title="Delete Permanently"
                     >
                       <Trash2 className="w-4 h-4" />

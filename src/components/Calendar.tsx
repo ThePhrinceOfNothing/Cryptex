@@ -45,7 +45,7 @@ export const Calendar: React.FC = () => {
 
   // Generate blank cells for days before the 1st
   const blanks = Array.from({ length: firstDayOfMonth }).map((_, i) => (
-    <div key={`blank-${i}`} className="min-h-[120px] bg-gray-50/50 border-r border-b border-gray-200"></div>
+    <div key={`blank-${i}`} className="min-h-[120px] bg-gray-50 dark:bg-zinc-900/50 border-r border-b border-gray-200 dark:border-white/10"></div>
   ));
 
   // Generate day cells
@@ -58,10 +58,10 @@ export const Calendar: React.FC = () => {
       <div 
         key={`day-${day}`} 
         onClick={() => handleDayClick(day)}
-        className="min-h-[120px] bg-white border-r border-b border-gray-200 p-2 cursor-pointer hover:bg-gray-50 transition-colors group relative"
+        className="min-h-[120px] bg-white dark:bg-[#121214] border-r border-b border-gray-200 dark:border-white/10 p-2 cursor-pointer hover:bg-gray-50 dark:hover:bg-zinc-900 transition-colors group relative"
       >
         <div className="flex justify-between items-start">
-          <span className="text-sm font-medium text-gray-700">{day}</span>
+          <span className="text-sm font-medium text-gray-700 dark:text-zinc-300">{day}</span>
           <Plus className="w-4 h-4 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity" />
         </div>
         
@@ -79,33 +79,33 @@ export const Calendar: React.FC = () => {
   const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 
   return (
-    <div className="p-8 h-full bg-white flex flex-col max-w-6xl mx-auto">
+    <div className="p-8 h-full bg-white dark:bg-[#121214] flex flex-col max-w-6xl mx-auto">
       <div className="flex justify-between items-center mb-8 shrink-0">
         <div>
-          <h1 className="text-2xl font-semibold text-gray-900 tracking-tight flex items-center gap-2">
+          <h1 className="text-2xl font-semibold text-gray-900 dark:text-zinc-100 tracking-tight flex items-center gap-2">
             <CalendarIcon className="text-accent w-6 h-6" />
             Calendar
           </h1>
-          <p className="text-sm text-gray-500 mt-1">Schedule and manage your secure events.</p>
+          <p className="text-sm text-gray-500 dark:text-zinc-500 mt-1">Schedule and manage your secure events.</p>
         </div>
         
         <div className="flex items-center gap-4">
-          <button onClick={handlePrevMonth} className="p-2 border border-gray-200 rounded-md hover:bg-gray-50 transition-colors">
-            <ChevronLeft className="w-4 h-4 text-gray-600" />
+          <button onClick={handlePrevMonth} className="p-2 border border-gray-200 dark:border-white/10 rounded-md hover:bg-gray-50 dark:hover:bg-zinc-900 dark:bg-zinc-900/50 transition-colors">
+            <ChevronLeft className="w-4 h-4 text-gray-600 dark:text-zinc-400" />
           </button>
-          <span className="text-lg font-medium text-gray-900 w-32 text-center">
+          <span className="text-lg font-medium text-gray-900 dark:text-zinc-100 w-32 text-center">
             {monthNames[month]} {year}
           </span>
-          <button onClick={handleNextMonth} className="p-2 border border-gray-200 rounded-md hover:bg-gray-50 transition-colors">
-            <ChevronRight className="w-4 h-4 text-gray-600" />
+          <button onClick={handleNextMonth} className="p-2 border border-gray-200 dark:border-white/10 rounded-md hover:bg-gray-50 dark:hover:bg-zinc-900 dark:bg-zinc-900/50 transition-colors">
+            <ChevronRight className="w-4 h-4 text-gray-600 dark:text-zinc-400" />
           </button>
         </div>
       </div>
 
       {isAdding && (
-        <div className="mb-6 p-4 bg-gray-50 border border-gray-200 rounded-xl flex items-end gap-4 shrink-0">
+        <div className="mb-6 p-4 bg-gray-50 dark:bg-zinc-900/50 border border-gray-200 dark:border-white/10 rounded-xl flex items-end gap-4 shrink-0">
           <div className="flex-1">
-            <label className="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1">
+            <label className="block text-xs font-semibold text-gray-700 dark:text-zinc-300 uppercase tracking-wider mb-1">
               New Event on {selectedDateStr}
             </label>
             <input
@@ -114,13 +114,13 @@ export const Calendar: React.FC = () => {
               onChange={(e) => setEventTitle(e.target.value)}
               placeholder="Event Title..."
               autoFocus
-              className="w-full bg-white border border-gray-200 rounded-md px-3 py-2 text-gray-900 text-sm focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent"
+              className="w-full bg-white dark:bg-[#121214] border border-gray-200 dark:border-white/10 rounded-md px-3 py-2 text-gray-900 dark:text-zinc-100 text-sm focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent"
             />
           </div>
           <div className="flex gap-2">
             <button
               onClick={() => setIsAdding(false)}
-              className="px-4 py-2 text-gray-500 hover:text-gray-900 transition-colors text-sm font-medium"
+              className="px-4 py-2 text-gray-500 dark:text-zinc-500 hover:text-gray-900 dark:text-zinc-100 transition-colors text-sm font-medium"
             >
               Cancel
             </button>
@@ -138,11 +138,11 @@ export const Calendar: React.FC = () => {
       )}
 
       {/* CSS Grid Calendar */}
-      <div className="flex-1 border-t border-l border-gray-200 rounded-lg overflow-hidden flex flex-col">
+      <div className="flex-1 border-t border-l border-gray-200 dark:border-white/10 rounded-lg overflow-hidden flex flex-col">
         {/* Days Header */}
-        <div className="grid grid-cols-7 bg-gray-50">
+        <div className="grid grid-cols-7 bg-gray-50 dark:bg-zinc-900/50">
           {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-            <div key={day} className="py-2 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider border-r border-b border-gray-200">
+            <div key={day} className="py-2 text-center text-xs font-semibold text-gray-500 dark:text-zinc-500 uppercase tracking-wider border-r border-b border-gray-200 dark:border-white/10">
               {day}
             </div>
           ))}

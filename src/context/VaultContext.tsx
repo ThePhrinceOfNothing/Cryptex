@@ -6,7 +6,7 @@ import type { VaultData } from '../lib/vault';
 interface VaultContextState {
   isLocked: boolean;
   vaultData: VaultData | null;
-  unlockVault: (key: CryptoKey, salt: Uint8Array, data: VaultData) => void;
+  unlockVault: (key: CryptoKey, salt: Uint8Array, data: VaultData) => Promise<void>;
   lockVault: () => void;
   updateVaultData: (newData: Partial<VaultData>) => Promise<void>;
   exportVaultData: () => Promise<void>;
@@ -92,11 +92,26 @@ export const VaultProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     };
   }, [isLocked, lockVault, vaultData?.settings?.autoLockTimer]);
 
-  const unlockVault = (key: CryptoKey, keySalt: Uint8Array, data: VaultData) => {
+  const unlockVault = async (key: CryptoKey, keySalt: Uint8Array, data: VaultData) => {
     setCryptoKey(key);
     setSalt(keySalt);
     setVaultData(data);
     setIsLocked(false);
+
+    // Self-healing: if the vault was just restored from a backup, the unencrypted config might be out of date.
+    // Sync it with the decrypted settings now that we have access to them.
+    if (data.settings) {
+      try {
+        const { saveAppConfig } = await import('../lib/config');
+        await saveAppConfig({
+          workspaceName: data.settings.workspaceName,
+          subtitle: data.settings.subtitle,
+          avatarBase64: data.settings.avatarBase64
+        });
+      } catch (err) {
+        console.error("Failed to sync config on unlock:", err);
+      }
+    }
   };
 
   const updateVaultData = async (newData: Partial<VaultData>) => {

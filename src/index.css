@@ -3,7 +3,7 @@
 @tailwind utilities;
 
 body {
-  @apply bg-white text-gray-900 min-h-screen font-sans;
+  @apply bg-white text-gray-900 dark:bg-[#0c0c0e] dark:text-zinc-100 min-h-screen font-sans;
 }
 
 html[data-density='compact'] .p-4 { padding: 0.5rem; }
@@ -45,8 +45,39 @@ input[type="password"]::-webkit-clear-button {
 .ProseMirror ul { @apply list-disc pl-5 mb-3 space-y-1; }
 .ProseMirror ol { @apply list-decimal pl-5 mb-3 space-y-1; }
 .ProseMirror a { @apply text-blue-500 hover:underline cursor-pointer; }
-.ProseMirror blockquote { @apply border-l-4 border-gray-200 pl-4 py-1 italic text-gray-600 my-4 bg-gray-50 rounded-r-md; }
+.ProseMirror blockquote {
+  border-left: 3px solid #008EFF;
+  padding-left: 1rem;
+  color: #52525b; /* zinc-600 */
+  font-style: italic;
+}
+
+.dark .ProseMirror p {
+  color: #d4d4d8; /* zinc-300 */
+}
+
+.dark .ProseMirror h1,
+.dark .ProseMirror h2,
+.dark .ProseMirror h3,
+.dark .ProseMirror h4 {
+  color: #f4f4f5; /* zinc-100 */
+}
+
+.dark .ProseMirror blockquote {
+  color: #a1a1aa; /* zinc-400 */
+}
+
+.dark .ProseMirror code {
+  background-color: #27272a; /* zinc-800 */
+  color: #e4e4e7; /* zinc-200 */
+}
+
+.dark .ProseMirror pre {
+  background-color: #18181b; /* zinc-900 */
+  color: #e4e4e7;
+}
 .ProseMirror code { @apply bg-gray-100 text-accent px-1.5 py-0.5 rounded text-sm font-mono; }
 .ProseMirror pre { @apply bg-gray-900 text-gray-100 p-4 rounded-lg my-4 overflow-x-auto; }
 .ProseMirror pre code { @apply bg-transparent text-gray-100 p-0; }
+.dark .ProseMirror strong { @apply text-zinc-100; }
 .ProseMirror strong { @apply font-bold text-gray-900; }

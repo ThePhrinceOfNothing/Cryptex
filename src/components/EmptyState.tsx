@@ -12,7 +12,7 @@ interface EmptyStateProps {
 
 export const EmptyState: React.FC<EmptyStateProps> = ({ icon: Icon, title, subtitle, actionLabel, onAction }) => {
   return (
-    <div className="h-full flex flex-col items-center justify-center p-8 text-center bg-white rounded-xl">
+    <div className="h-full flex flex-col items-center justify-center p-8 text-center bg-white dark:bg-[#121214] rounded-xl">
       <motion.div 
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
@@ -23,8 +23,8 @@ export const EmptyState: React.FC<EmptyStateProps> = ({ icon: Icon, title, subti
           <Icon size={48} strokeWidth={1.2} className="text-gray-300" />
         </div>
         
-        <h3 className="text-lg font-semibold text-gray-900 mb-2">{title}</h3>
-        <p className="text-sm text-gray-500 max-w-sm mb-8 leading-relaxed">
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-zinc-100 mb-2">{title}</h3>
+        <p className="text-sm text-gray-500 dark:text-zinc-500 max-w-sm mb-8 leading-relaxed">
           {subtitle}
         </p>
 

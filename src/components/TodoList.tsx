@@ -35,8 +35,8 @@ export const TodoList: React.FC = () => {
   };
 
   return (
-    <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm h-full flex flex-col">
-      <h2 className="text-lg font-semibold mb-4 text-gray-900 flex items-center gap-2">
+    <div className="bg-white dark:bg-[#121214] border border-gray-200 dark:border-white/10 rounded-xl p-6 shadow-sm h-full flex flex-col">
+      <h2 className="text-lg font-semibold mb-4 text-gray-900 dark:text-zinc-100 flex items-center gap-2">
         <CheckCircle2 className="text-accent w-5 h-5" />
         Tasks
       </h2>
@@ -47,12 +47,12 @@ export const TodoList: React.FC = () => {
           value={newTask}
           onChange={(e) => setNewTask(e.target.value)}
           placeholder="Add a new securely encrypted task..."
-          className="flex-1 bg-white border border-gray-200 rounded-md px-4 py-2 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-shadow shadow-sm"
+          className="flex-1 bg-white dark:bg-[#121214] border border-gray-200 dark:border-white/10 rounded-md px-4 py-2 text-gray-900 dark:text-zinc-100 placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-shadow shadow-sm"
         />
         <button
           type="submit"
           disabled={!newTask.trim()}
-          className="bg-accent hover:bg-blue-600 disabled:bg-gray-100 disabled:text-gray-400 text-white p-2 rounded-md transition-colors shadow-sm"
+          className="bg-accent hover:bg-blue-600 disabled:bg-gray-100 dark:bg-zinc-900 disabled:text-gray-400 text-white p-2 rounded-md transition-colors shadow-sm"
         >
           <Plus className="w-5 h-5" />
         </button>
@@ -66,7 +66,7 @@ export const TodoList: React.FC = () => {
             <div 
               key={todo.id} 
               className={`flex items-center justify-between p-3 rounded-md border transition-colors shadow-sm ${
-                todo.completed ? 'bg-gray-50 border-gray-100' : 'bg-white border-gray-200'
+                todo.completed ? 'bg-gray-50 dark:bg-zinc-900/50 border-gray-100' : 'bg-white dark:bg-[#121214] border-gray-200 dark:border-white/10'
               }`}
             >
               <div 
@@ -78,7 +78,7 @@ export const TodoList: React.FC = () => {
                 ) : (
                   <Circle className="w-5 h-5 text-gray-300 shrink-0 hover:text-accent transition-colors" />
                 )}
-                <span className={`transition-all ${todo.completed ? 'text-gray-400 line-through' : 'text-gray-700'}`}>
+                <span className={`transition-all ${todo.completed ? 'text-gray-400 line-through' : 'text-gray-700 dark:text-zinc-300'}`}>
                   {todo.text}
                 </span>
               </div>

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { VaultProvider, useVault } from './context/VaultContext';
 import { LockScreen } from './components/LockScreen';
 import { Dashboard } from './components/Dashboard';
@@ -10,14 +10,23 @@ import { Income } from './components/Income';
 import { Calendar } from './components/Calendar';
 import { Attachments } from './components/Attachments';
 import { Settings } from './components/Settings';
+import { OnboardingTour } from './components/OnboardingTour';
 import { motion, AnimatePresence } from 'framer-motion';
 import { pageFadeIn } from './lib/AnimationUtils';
 
 function AppContent() {
-  const { isLocked } = useVault();
-  const [activeTab, setActiveTab] = useState('My Vault');
+  const { isLocked, vaultData } = useVault();
+  const [activeTab, setActiveTab] = useState<string>('Dashboard');
   const [selectedCredentialId, setSelectedCredentialId] = useState<string | null>(null);
   const [isCreating, setIsCreating] = useState(false);
+
+  useEffect(() => {
+    if (vaultData?.settings?.theme === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, [vaultData?.settings?.theme]);
 
   // Reset state when switching tabs
   React.useEffect(() => {
@@ -25,7 +34,6 @@ function AppContent() {
     setIsCreating(false);
   }, [activeTab]);
 
-  const { vaultData } = useVault();
   React.useEffect(() => {
     if (vaultData?.settings) {
       const fs = vaultData.settings.fontSize;
@@ -111,7 +119,7 @@ function AppContent() {
   } else if (activeTab === 'Settings') {
     content = <Settings />;
   } else {
-    content = <div className="p-8 text-gray-500">Coming soon...</div>;
+    content = <div className="p-8 text-gray-500 dark:text-zinc-500">Coming soon...</div>;
   }
 
   return (
@@ -131,6 +139,7 @@ function AppContent() {
             setActiveTab={setActiveTab}
             middlePane={middlePane}
           >
+            <OnboardingTour />
             <AnimatePresence mode="wait">
               <motion.div
                 key={activeTab}

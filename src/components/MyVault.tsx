@@ -29,21 +29,21 @@ export const MyVaultList: React.FC<MyVaultListProps> = ({ selectedId, onSelect, 
   }, [credentials, searchQuery]);
 
   return (
-    <div className="flex flex-col h-full bg-white">
-      <div className="h-16 flex items-center justify-between px-6 border-b border-gray-200 shrink-0">
-        <h2 className="font-semibold text-gray-900">Passwords</h2>
+    <div className="flex flex-col h-full bg-white dark:bg-[#121214]">
+      <div className="h-16 flex items-center justify-between px-6 border-b border-gray-200 dark:border-white/10 shrink-0">
+        <h2 className="font-semibold text-gray-900 dark:text-zinc-100">Passwords</h2>
         <motion.button 
           onClick={onCreateNew}
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
-          className="w-8 h-8 flex items-center justify-center bg-white border border-gray-200 hover:border-accent hover:text-accent rounded-md text-gray-600 transition-colors shadow-sm"
+          className="w-8 h-8 flex items-center justify-center bg-white dark:bg-[#121214] border border-gray-200 dark:border-white/10 hover:border-accent hover:text-accent rounded-md text-gray-600 dark:text-zinc-400 transition-colors shadow-sm"
           title="Add new credential"
         >
           <Plus size={16} />
         </motion.button>
       </div>
       
-      <div className="p-4 border-b border-gray-200 shrink-0">
+      <div className="p-4 border-b border-gray-200 dark:border-white/10 shrink-0">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
           <input 
@@ -51,7 +51,7 @@ export const MyVaultList: React.FC<MyVaultListProps> = ({ selectedId, onSelect, 
             placeholder="Search accounts..." 
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-9 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-md text-sm text-gray-900 focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent focus:bg-white transition-colors"
+            className="w-full pl-9 pr-4 py-2 bg-gray-50 dark:bg-zinc-900/50 border border-gray-200 dark:border-white/10 rounded-md text-sm text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent focus:bg-white dark:bg-[#121214] transition-colors"
           />
         </div>
       </div>
@@ -67,19 +67,19 @@ export const MyVaultList: React.FC<MyVaultListProps> = ({ selectedId, onSelect, 
               className={`w-full text-left p-3 rounded-md border flex items-center gap-3 transition-colors ${
                 selectedId === cred.id 
                   ? 'bg-accent/5 border-accent shadow-sm' 
-                  : 'bg-white border-transparent hover:border-gray-200 hover:bg-gray-50'
+                  : 'bg-white dark:bg-[#121214] border-transparent hover:border-gray-200 dark:border-white/10 hover:bg-gray-50 dark:hover:bg-zinc-900 dark:bg-zinc-900/50'
               }`}
             >
               <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 border ${
-                selectedId === cred.id ? 'bg-accent text-white border-accent' : 'bg-gray-100 text-gray-500 border-gray-200'
+                selectedId === cred.id ? 'bg-accent text-white border-accent' : 'bg-gray-100 dark:bg-zinc-900 text-gray-500 dark:text-zinc-500 border-gray-200 dark:border-white/10'
               }`}>
                 <Key size={14} />
               </div>
               <div className="min-w-0 flex-1">
-                <p className={`font-medium text-sm truncate ${selectedId === cred.id ? 'text-accent' : 'text-gray-900'}`}>
+                <p className={`font-medium text-sm truncate ${selectedId === cred.id ? 'text-accent' : 'text-gray-900 dark:text-zinc-100'}`}>
                   {cred.title}
                 </p>
-                <p className="text-xs text-gray-500 truncate">{cred.username}</p>
+                <p className="text-xs text-gray-500 dark:text-zinc-500 truncate">{cred.username}</p>
               </div>
             </button>
           ))
@@ -201,10 +201,10 @@ export const MyVaultDetails: React.FC<MyVaultDetailsProps> = ({ selectedId, isCr
     <div className="max-w-2xl mx-auto p-8 h-full">
       <div className="flex justify-between items-start mb-8">
         <div>
-          <h1 className="text-2xl font-semibold text-gray-900 tracking-tight">
+          <h1 className="text-2xl font-semibold text-gray-900 dark:text-zinc-100 tracking-tight">
             {isCreating ? 'Add New Account' : 'Account Details'}
           </h1>
-          <p className="text-sm text-gray-500 mt-1">
+          <p className="text-sm text-gray-500 dark:text-zinc-500 mt-1">
             {isCreating ? 'Securely encrypt a new credential.' : 'Your data is decrypted in memory.'}
           </p>
         </div>
@@ -222,11 +222,11 @@ export const MyVaultDetails: React.FC<MyVaultDetailsProps> = ({ selectedId, isCr
         )}
       </div>
 
-      <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm space-y-6">
+      <div className="bg-white dark:bg-[#121214] border border-gray-200 dark:border-white/10 rounded-xl p-6 shadow-sm space-y-6">
         
         {/* Title Input */}
         <div>
-          <label className="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-2">Service / Website Name</label>
+          <label className="block text-xs font-semibold text-gray-700 dark:text-zinc-300 uppercase tracking-wider mb-2">Service / Website Name</label>
           <div className="relative">
             <Globe className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
             <input
@@ -234,14 +234,14 @@ export const MyVaultDetails: React.FC<MyVaultDetailsProps> = ({ selectedId, isCr
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="e.g. Google, GitHub, Bank"
-              className="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-200 rounded-md text-gray-900 focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-colors font-medium"
+              className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-[#121214] border border-gray-200 dark:border-white/10 rounded-md text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-colors font-medium"
             />
           </div>
         </div>
 
         {/* Username Input */}
         <div>
-          <label className="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-2">Username / Email</label>
+          <label className="block text-xs font-semibold text-gray-700 dark:text-zinc-300 uppercase tracking-wider mb-2">Username / Email</label>
           <div className="relative">
             <UserIcon className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
             <input
@@ -249,7 +249,7 @@ export const MyVaultDetails: React.FC<MyVaultDetailsProps> = ({ selectedId, isCr
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               placeholder="user@example.com"
-              className="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-200 rounded-md text-gray-900 focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-colors"
+              className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-[#121214] border border-gray-200 dark:border-white/10 rounded-md text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-colors"
             />
           </div>
         </div>
@@ -257,7 +257,7 @@ export const MyVaultDetails: React.FC<MyVaultDetailsProps> = ({ selectedId, isCr
         {/* Password Input */}
         <div>
           <div className="flex justify-between items-end mb-2">
-            <label className="block text-xs font-semibold text-gray-700 uppercase tracking-wider">Password</label>
+            <label className="block text-xs font-semibold text-gray-700 dark:text-zinc-300 uppercase tracking-wider">Password</label>
             {isCreating && (
               <button 
                 onClick={handleGeneratePassword}
@@ -274,11 +274,11 @@ export const MyVaultDetails: React.FC<MyVaultDetailsProps> = ({ selectedId, isCr
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••••••••••"
-              className="w-full pl-10 pr-12 py-2.5 bg-gray-50 border border-gray-200 rounded-md text-gray-900 font-mono tracking-wider focus:bg-white focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-colors"
+              className="w-full pl-10 pr-12 py-2.5 bg-gray-50 dark:bg-zinc-900/50 border border-gray-200 dark:border-white/10 rounded-md text-gray-900 dark:text-zinc-100 font-mono tracking-wider focus:bg-white dark:bg-[#121214] focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-colors"
             />
             <button
               onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-3 p-1 text-gray-400 hover:text-gray-900 transition-colors"
+              className="absolute right-3 p-1 text-gray-400 hover:text-gray-900 dark:text-zinc-100 transition-colors"
             >
               {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
             </button>
@@ -305,7 +305,7 @@ export const MyVaultDetails: React.FC<MyVaultDetailsProps> = ({ selectedId, isCr
           disabled={isSaveDisabled}
           whileHover={{ scale: isSaveDisabled ? 1 : 1.02 }}
           whileTap={{ scale: isSaveDisabled ? 1 : 0.97 }}
-          className="px-6 py-2.5 bg-gray-900 hover:bg-gray-800 disabled:bg-gray-200 disabled:text-gray-400 text-white font-medium rounded-md shadow-sm transition-colors"
+          className="px-6 py-2.5 bg-gray-900 hover:bg-gray-800 disabled:bg-gray-200 dark:bg-zinc-800 disabled:text-gray-400 text-white font-medium rounded-md shadow-sm transition-colors"
         >
           {isCreating ? 'Save New Account' : 'Save Changes'}
         </motion.button>
