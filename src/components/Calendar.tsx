@@ -281,11 +281,11 @@ export const Calendar: React.FC = () => {
                   onDrop={(e) => handleDrop(e, dateStr)}
                   className={`bg-white dark:bg-[#18181b] rounded-xl border p-2 flex flex-col min-h-0 transition-colors cursor-pointer hover:border-accent/50 ${isToday ? 'border-accent shadow-sm ring-1 ring-accent/30' : 'border-gray-200 dark:border-white/10'}`}
                 >
-                  <span className={`text-xs font-bold mb-1 w-6 h-6 flex items-center justify-center rounded-full ${isToday ? 'bg-accent text-white' : 'text-gray-400'}`}>
+                  <span className={`text-xs font-bold mb-1 w-6 h-6 flex items-center justify-center rounded-full shrink-0 ${isToday ? 'bg-accent text-white' : 'text-gray-400'}`}>
                     {day}
                   </span>
                   
-                  <div className="flex-1 flex flex-col gap-1 overflow-y-auto no-scrollbar">
+                  <div className="flex-1 flex flex-col gap-1 overflow-y-auto no-scrollbar min-h-0">
                     {dayItems.map(item => (
                       <div
                         key={item.id}
