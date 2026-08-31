@@ -36,9 +36,10 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ""
         with:
           tagName: ${{ github.ref_name }}
-          releaseName: "Enclave ${{ github.ref_name }}"
-          releaseBody: "Automated release of Enclave."
+          releaseName: "Cryptex ${{ github.ref_name }}"
+          releaseBody: "Automated release of Cryptex."
           releaseDraft: false
           prerelease: false
           includeUpdaterJson: true
           args: --target x86_64-pc-windows-msvc
+

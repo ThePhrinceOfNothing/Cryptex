@@ -257,17 +257,17 @@ export const Calendar: React.FC = () => {
 
       {/* Main View */}
       {viewMode === 'agenda' ? renderAgenda() : (
-        <div className="flex-1 flex flex-col p-6">
-          <div className="grid grid-cols-7 mb-2">
+        <div className="flex-1 flex flex-col p-6 min-h-0">
+          <div className="grid grid-cols-7 mb-2 shrink-0">
             {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => (
               <div key={d} className="text-center text-xs font-bold uppercase tracking-wider text-gray-500 py-2">
                 {d}
               </div>
             ))}
           </div>
-          <div className="flex-1 grid grid-cols-7 grid-rows-6 gap-2">
+          <div className="flex-1 grid grid-cols-7 grid-rows-6 gap-2 min-h-0">
             {days.map((day, idx) => {
-              if (!day) return <div key={idx} className="bg-gray-50/50 dark:bg-zinc-900/20 rounded-xl border border-transparent"></div>;
+              if (!day) return <div key={idx} className="bg-gray-50/50 dark:bg-zinc-900/20 rounded-xl border border-transparent min-h-0"></div>;
               
               const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
               const dayItems = allItems.filter(e => e.date === dateStr);
@@ -279,7 +279,7 @@ export const Calendar: React.FC = () => {
                   onClick={() => handleDayClick(day)}
                   onDragOver={handleDragOver}
                   onDrop={(e) => handleDrop(e, dateStr)}
-                  className={`bg-white dark:bg-[#18181b] rounded-xl border p-2 flex flex-col transition-colors cursor-pointer hover:border-accent/50 ${isToday ? 'border-accent shadow-sm ring-1 ring-accent/30' : 'border-gray-200 dark:border-white/10'}`}
+                  className={`bg-white dark:bg-[#18181b] rounded-xl border p-2 flex flex-col min-h-0 transition-colors cursor-pointer hover:border-accent/50 ${isToday ? 'border-accent shadow-sm ring-1 ring-accent/30' : 'border-gray-200 dark:border-white/10'}`}
                 >
                   <span className={`text-xs font-bold mb-1 w-6 h-6 flex items-center justify-center rounded-full ${isToday ? 'bg-accent text-white' : 'text-gray-400'}`}>
                     {day}
