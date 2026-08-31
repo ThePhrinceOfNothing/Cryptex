@@ -40,7 +40,7 @@ export const Income: React.FC = () => {
     const expenseCategories = new Map<string, number>();
 
     sorted.forEach(tx => {
-      const month = new Date(tx.date).toLocaleString('default', { month: 'short', year: '2-digit' });
+      const month = new Date(tx.date).toLocaleString('default', { month: 'short', year: 'numeric' });
       
       if (tx.type === 'in') {
         bal += tx.amount;
@@ -126,7 +126,7 @@ export const Income: React.FC = () => {
           <div className="bg-white dark:bg-[#18181b] p-6 rounded-2xl border border-gray-200 dark:border-white/10 shadow-sm flex flex-col justify-center">
             <span className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-1">Total Net Worth</span>
             <span className={`text-4xl font-bold tracking-tight ${totalBalance >= 0 ? 'text-gray-900 dark:text-white' : 'text-red-500'}`}>
-              {curr}{totalBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              {totalBalance >= 0 ? '' : '-'}{curr}{Math.abs(totalBalance).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </span>
           </div>
           <div className="bg-white dark:bg-[#18181b] p-6 rounded-2xl border border-gray-200 dark:border-white/10 shadow-sm flex flex-col justify-center">
@@ -152,9 +152,9 @@ export const Income: React.FC = () => {
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={chartData}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#333" vertical={false} />
-                    <XAxis dataKey="name" stroke="#666" fontSize={12} tickLine={false} axisLine={false} />
-                    <YAxis stroke="#666" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(val) => `${curr}${val}`} />
-                    <Tooltip contentStyle={{ backgroundColor: '#18181b', borderColor: '#333', borderRadius: '8px' }} />
+                    <XAxis dataKey="name" stroke="#666" fontSize={10} tickLine={false} axisLine={false} />
+                    <YAxis stroke="#666" fontSize={10} tickLine={false} axisLine={false} tickFormatter={(val) => val < 0 ? `-${curr}${Math.abs(val)}` : `${curr}${val}`} />
+                    <Tooltip contentStyle={{ backgroundColor: '#18181b', borderColor: '#333', borderRadius: '8px' }} formatter={(value: any) => value < 0 ? `-${curr}${Math.abs(value).toFixed(2)}` : `${curr}${value.toFixed(2)}`} />
                     <Line type="monotone" dataKey="balance" stroke="#3b82f6" strokeWidth={3} dot={{ r: 4, fill: '#3b82f6', strokeWidth: 2, stroke: '#18181b' }} activeDot={{ r: 6 }} />
                   </LineChart>
                 </ResponsiveContainer>
@@ -461,4 +461,6 @@ const TransactionModal: React.FC<{ isOpen: boolean, onClose: () => void, tx: Tra
     </div>
   );
 };
+
+
 
