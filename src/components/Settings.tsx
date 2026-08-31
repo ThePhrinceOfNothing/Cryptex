@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { User, Settings as SettingsIcon, Shield, Palette, Database, Upload, Download, Trash2, KeyRound, X, CheckCircle2, Info } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useVault } from '../context/VaultContext';
+import { ConfirmModal } from './ConfirmModal';
 import { deleteVault } from '../lib/vault';
 import type { VaultSettings } from '../lib/vault';
 import { saveAppConfig } from '../lib/config';
@@ -24,6 +25,10 @@ export const Settings: React.FC = () => {
   const [passwordError, setPasswordError] = useState('');
   const [passwordSuccess, setPasswordSuccess] = useState(false);
   const [appVersion, setAppVersion] = useState<string>('...');
+
+  const [isEraseModalOpen, setIsEraseModalOpen] = useState(false);
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  const [importFile, setImportFile] = useState<File | null>(null);
 
   useEffect(() => {
     setWorkspaceName(settings.workspaceName || 'My Workspace');
@@ -69,10 +74,30 @@ export const Settings: React.FC = () => {
   };
 
   const handleEraseVault = async () => {
-    if (confirm('Are you sure you want to permanently erase this vault? This action cannot be undone.')) {
-      await deleteVault();
-      window.location.reload();
-    }
+    await deleteVault();
+    window.location.reload();
+  };
+
+  const handleImportFile = async () => {
+    if (!importFile) return;
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      try {
+        const json = JSON.parse(event.target?.result as string);
+        if (json.salt && json.iv && json.ciphertext) {
+          const { importVault } = await import('../lib/vault');
+          await importVault(json);
+          alert("Backup successfully restored! The app will now reload.");
+          window.location.reload();
+        } else {
+          alert("Invalid vault backup file.");
+        }
+      } catch (err) {
+        alert("Failed to parse backup file.");
+      }
+    };
+    reader.readAsText(importFile);
+    setImportFile(null);
   };
 
   const handleChangePassword = async () => {
@@ -100,7 +125,27 @@ export const Settings: React.FC = () => {
   };
 
   return (
-    <div className="max-w-3xl mx-auto p-8 h-full bg-white dark:bg-[#121214] flex flex-col overflow-y-auto">
+    <>
+      <ConfirmModal
+        isOpen={isEraseModalOpen}
+        onCancel={() => setIsEraseModalOpen(false)}
+        onConfirm={handleEraseVault}
+        title="Erase Vault"
+        message="Are you sure you want to permanently erase this vault? All data will be deleted. This action cannot be undone."
+      />
+      
+      <ConfirmModal
+        isOpen={isImportModalOpen}
+        onCancel={() => {
+          setIsImportModalOpen(false);
+          setImportFile(null);
+        }}
+        onConfirm={handleImportFile}
+        title="Import Backup"
+        message="WARNING: Importing a vault backup will overwrite all current data. Are you sure you want to proceed?"
+        confirmText="Overwrite Data"
+      />
+      <div className="max-w-3xl mx-auto p-8 h-full bg-white dark:bg-[#121214] flex flex-col overflow-y-auto">
       <div className="mb-10 shrink-0">
         <h1 className="text-2xl font-semibold text-gray-900 dark:text-zinc-100 tracking-tight flex items-center gap-2">
           <SettingsIcon className="text-accent w-6 h-6" strokeWidth={1.5} />
@@ -210,7 +255,7 @@ export const Settings: React.FC = () => {
               </div>
               <div className="flex items-center gap-2">
                 {[
-                  { name: 'Enclave Blue', hex: '#008EFF' },
+                  { name: 'Cryptex Blue', hex: '#008EFF' },
                   { name: 'Matrix Green', hex: '#10B981' },
                   { name: 'Synthwave Pink', hex: '#EC4899' },
                   { name: 'Cyberpunk Yellow', hex: '#F59E0B' },
@@ -354,7 +399,7 @@ export const Settings: React.FC = () => {
             App Info
           </div>
           <div className="bg-white dark:bg-[#121214] border border-zinc-200 rounded-xl p-6 shadow-sm">
-            <h4 className="text-sm font-medium text-gray-900 dark:text-zinc-100">Enclave</h4>
+            <h4 className="text-sm font-medium text-gray-900 dark:text-zinc-100">Cryptex</h4>
             <p className="text-xs text-gray-500 dark:text-zinc-500 mt-0.5">Version {appVersion} • Local-First Architecture</p>
           </div>
         </section>
@@ -388,25 +433,8 @@ export const Settings: React.FC = () => {
                   onChange={(e) => {
                     const file = e.target.files?.[0];
                     if (file) {
-                      if (confirm("WARNING: Importing a vault backup will overwrite all current data. Are you sure you want to proceed?")) {
-                        const reader = new FileReader();
-                        reader.onload = async (event) => {
-                          try {
-                            const json = JSON.parse(event.target?.result as string);
-                            if (json.salt && json.iv && json.ciphertext) {
-                              const { importVault } = await import('../lib/vault');
-                              await importVault(json);
-                              alert("Backup successfully restored! The app will now reload.");
-                              window.location.reload();
-                            } else {
-                              alert("Invalid vault backup file.");
-                            }
-                          } catch(err) {
-                            alert("Failed to parse backup file.");
-                          }
-                        };
-                        reader.readAsText(file);
-                      }
+                      setImportFile(file);
+                      setIsImportModalOpen(true);
                       e.target.value = '';
                     }
                   }}
@@ -430,7 +458,7 @@ export const Settings: React.FC = () => {
               <p className="text-xs text-gray-500 dark:text-zinc-500">Permanently erase the vault file from this device. You will lose access to all your data unless you have an exported backup.</p>
               <div className="mt-2">
                 <motion.button
-                  onClick={handleEraseVault}
+                  onClick={() => setIsEraseModalOpen(true)}
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.97 }}
                   className="px-4 py-2.5 bg-white dark:bg-[#121214] border border-red-200 hover:border-red-300 hover:bg-red-50 text-red-600 text-sm font-medium rounded-md transition-colors flex items-center gap-2 shadow-sm inline-flex"
@@ -511,5 +539,7 @@ export const Settings: React.FC = () => {
         )}
       </AnimatePresence>
     </div>
+    </>
   );
 };
+

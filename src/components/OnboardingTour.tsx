@@ -14,7 +14,7 @@ export const OnboardingTour: React.FC = () => {
       placement: 'center',
       content: (
         <div>
-          <h2 className="text-xl font-bold text-gray-900 dark:text-zinc-100 mb-2">Welcome to Enclave!</h2>
+          <h2 className="text-xl font-bold text-gray-900 dark:text-zinc-100 mb-2">Welcome to Cryptex!</h2>
           <p className="text-gray-600 dark:text-zinc-400">Let's take a quick tour of your new zero-knowledge workspace.</p>
         </div>
       ),
@@ -102,3 +102,4 @@ export const OnboardingTour: React.FC = () => {
     />
   );
 };
+

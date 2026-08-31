@@ -10,7 +10,6 @@ const LazyNotesEditor = React.lazy(() => import('./components/Notes').then(m => 
 const LazyTasks = React.lazy(() => import('./components/Tasks').then(m => ({ default: m.Tasks })));
 const LazyIncome = React.lazy(() => import('./components/Income').then(m => ({ default: m.Income })));
 const LazyCalendar = React.lazy(() => import('./components/Calendar').then(m => ({ default: m.Calendar })));
-const LazyAttachments = React.lazy(() => import('./components/Attachments').then(m => ({ default: m.Attachments })));
 const LazySettings = React.lazy(() => import('./components/Settings').then(m => ({ default: m.Settings })));
 const LazyOnboardingTour = React.lazy(() => import('./components/OnboardingTour').then(m => ({ default: m.OnboardingTour })));
 import { motion, AnimatePresence } from 'framer-motion';
@@ -54,6 +53,15 @@ function AppContent() {
     }
   }, [vaultData?.settings?.theme]);
 
+  // Security measure: Reset active module to a safe default when locking
+  useEffect(() => {
+    if (isLocked) {
+      setActiveTabState('Dashboard');
+      setSelectedCredentialId(null);
+      setIsCreating(false);
+    }
+  }, [isLocked]);
+
   React.useEffect(() => {
     // Show window once React is ready to avoid white flash
     getCurrentWindow().show();
@@ -79,7 +87,7 @@ function AppContent() {
   let middlePane = undefined;
 
   if (activeTab === 'Dashboard') {
-    content = <LazyDashboard />;
+    content = <LazyDashboard onNavigate={setActiveTab} />;
   } else if (activeTab === 'My Vault') {
     middlePane = (
       <LazyMyVaultList 
@@ -124,13 +132,9 @@ function AppContent() {
     content = (
       <LazyNotesEditor 
         selectedId={selectedCredentialId} 
-        isCreating={isCreating}
-        onSaveComplete={(id) => {
-          setIsCreating(false);
+        onSelect={(id) => {
           setSelectedCredentialId(id);
-        }}
-        onDeleteComplete={() => {
-          setSelectedCredentialId(null);
+          setIsCreating(false);
         }}
       />
     );
@@ -140,8 +144,6 @@ function AppContent() {
     content = <LazyIncome />;
   } else if (activeTab === 'Calendar') {
     content = <LazyCalendar />;
-  } else if (activeTab === 'Secure Docs') {
-    content = <LazyAttachments />;
   } else if (activeTab === 'Settings') {
     content = <LazySettings />;
   } else {
@@ -168,18 +170,13 @@ function AppContent() {
                 middlePane={middlePane}
               >
                 <LazyOnboardingTour />
-                <AnimatePresence mode="wait">
-                  <motion.div
-                    key={activeTab}
-                    initial="initial"
-                    animate="animate"
-                    exit="exit"
-                    variants={pageFadeIn}
-                    className="h-full w-full"
-                  >
-                    {content}
-                  </motion.div>
-                </AnimatePresence>
+                <React.Suspense fallback={
+                  <div className="w-full h-full flex items-center justify-center">
+                    <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-accent"></div>
+                  </div>
+                }>
+                  {content}
+                </React.Suspense>
               </LazyAppLayout>
             </React.Suspense>
           </motion.div>
@@ -197,3 +194,4 @@ function App() {
 }
 
 export default App;
+

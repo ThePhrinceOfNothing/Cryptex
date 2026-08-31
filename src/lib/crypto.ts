@@ -87,3 +87,4 @@ export async function decryptData(
   const decoder = new TextDecoder();
   return decoder.decode(decryptedBuffer);
 }
+

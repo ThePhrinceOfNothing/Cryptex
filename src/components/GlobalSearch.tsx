@@ -265,3 +265,4 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({ onNavigate }) => {
     </div>
   );
 };
+

@@ -235,7 +235,7 @@ export const LockScreen: React.FC = () => {
           {/* Card Header Branding */}
           <div className="flex items-center gap-2 text-zinc-500 text-[10px] font-bold tracking-widest uppercase mb-8">
             <Hexagon className="w-3 h-3 text-accent" />
-            <span>ENCLAVE</span>
+            <span>Cryptex</span>
           </div>
 
           <AnimatePresence mode="wait">
@@ -248,9 +248,9 @@ export const LockScreen: React.FC = () => {
                 exit="exit"
                 className="flex flex-col items-center w-full"
               >
-                <img src={logoUrl} alt="Enclave Logo" className="w-14 h-14 object-contain" />
+                <img src={logoUrl} alt="Cryptex Logo" className="w-14 h-14 object-contain" />
                 <h1 className="text-white font-semibold text-xl mt-4 tracking-tight">
-                  Enclave
+                  Cryptex
                 </h1>
                 <p className="text-xs text-zinc-400 mt-2 mb-8 leading-relaxed">
                   An isolated, zero-knowledge workspace where your data remains fully sovereign.
@@ -320,7 +320,7 @@ export const LockScreen: React.FC = () => {
                 exit="exit"
                 className="flex flex-col items-center w-full"
               >
-                <img src={logoUrl} alt="Enclave Logo" className="w-12 h-12 object-contain" />
+                <img src={logoUrl} alt="Cryptex Logo" className="w-12 h-12 object-contain" />
                 <h1 className="text-white font-semibold text-xl mt-4 tracking-tight">
                   Configure Node
                 </h1>
@@ -528,3 +528,4 @@ export const LockScreen: React.FC = () => {
     </div>
   );
 };
+

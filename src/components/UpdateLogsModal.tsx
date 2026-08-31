@@ -29,26 +29,26 @@ export const UpdateLogsModal: React.FC = () => {
           
           try {
             // Check GitHub API for release notes. Try with 'v' prefix first (e.g., v1.1.8)
-            let res = await fetch(`https://api.github.com/repos/ThePhrinceOfNothing/Enclave/releases/tags/v${version}`);
+            let res = await fetch(`https://api.github.com/repos/ThePhrinceOfNothing/Cryptex/releases/tags/v${version}`);
             
             // If the specific tag isn't found, try without 'v'
             if (!res.ok) {
-              res = await fetch(`https://api.github.com/repos/ThePhrinceOfNothing/Enclave/releases/tags/${version}`);
+              res = await fetch(`https://api.github.com/repos/ThePhrinceOfNothing/Cryptex/releases/tags/${version}`);
             }
             
             // If still not found, try getting the absolute latest release as a fallback
             if (!res.ok) {
-              res = await fetch(`https://api.github.com/repos/ThePhrinceOfNothing/Enclave/releases/latest`);
+              res = await fetch(`https://api.github.com/repos/ThePhrinceOfNothing/Cryptex/releases/latest`);
             }
 
             if (res.ok) {
               const data = await res.json();
               setMarkdownLogs(data.body);
             } else {
-              setMarkdownLogs(`## Welcome to Enclave v${version}!\n\nRelease notes are not yet available on GitHub for this version. Please check back later or visit the repository directly.`);
+              setMarkdownLogs(`## Welcome to Cryptex v${version}!\n\nRelease notes are not yet available on GitHub for this version. Please check back later or visit the repository directly.`);
             }
           } catch (err) {
-            setMarkdownLogs(`## Welcome to Enclave v${version}!\n\nFailed to fetch release notes from GitHub. Please check your internet connection.`);
+            setMarkdownLogs(`## Welcome to Cryptex v${version}!\n\nFailed to fetch release notes from GitHub. Please check your internet connection.`);
           } finally {
             setIsLoadingLogs(false);
           }
@@ -114,7 +114,7 @@ export const UpdateLogsModal: React.FC = () => {
                 </div>
                 <div>
                   <h2 className="text-xl font-bold text-gray-900 dark:text-white">Update Successful!</h2>
-                  <p className="text-sm text-gray-500 dark:text-zinc-400 font-medium">Welcome to Enclave v{currentVersion}</p>
+                  <p className="text-sm text-gray-500 dark:text-zinc-400 font-medium">Welcome to Cryptex v{currentVersion}</p>
                 </div>
               </div>
             </div>
@@ -163,7 +163,7 @@ export const UpdateLogsModal: React.FC = () => {
                     : 'bg-gray-100 dark:bg-white/5 text-gray-400 dark:text-zinc-500 cursor-not-allowed'
                 }`}
               >
-                Continue to Enclave
+                Continue to Cryptex
               </button>
             </div>
           </motion.div>
@@ -172,3 +172,4 @@ export const UpdateLogsModal: React.FC = () => {
     </AnimatePresence>
   );
 };
+

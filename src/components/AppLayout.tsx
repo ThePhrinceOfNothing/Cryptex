@@ -46,7 +46,6 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children, middlePane, acti
     { name: 'Notes', icon: StickyNote },
     { name: 'Tasks', icon: CheckSquare },
     { name: 'Calendar', icon: Calendar },
-    { name: 'Secure Docs', icon: Shield },
     { name: 'Income', icon: DollarSign },
   ];
 
@@ -75,14 +74,19 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children, middlePane, acti
       <AnimatePresence>
         {lockCountdown !== null && lockCountdown > 0 && (
           <motion.div
-            initial={{ opacity: 0, y: -50 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -50 }}
-            className="fixed top-4 left-1/2 -translate-x-1/2 z-[100] bg-gray-900 text-white px-6 py-3 rounded-full shadow-2xl flex items-center gap-3 border border-gray-700/50"
+            initial={{ opacity: 0, scale: 0.95, y: "-50%", x: "-50%" }}
+            animate={{ opacity: 1, scale: 1, y: "-50%", x: "-50%" }}
+            exit={{ opacity: 0, scale: 0.95, y: "-50%", x: "-50%" }}
+            className="fixed top-1/2 left-1/2 z-[100] bg-white/90 dark:bg-[#121214]/90 backdrop-blur-md text-gray-900 dark:text-zinc-100 px-6 py-4 rounded-xl shadow-2xl flex flex-col items-center gap-2 border border-gray-200 dark:border-white/10"
           >
-            <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
-            <p className="text-sm font-medium">Vault auto-locking in <span className="font-bold text-red-400">{lockCountdown}s</span></p>
-            <p className="text-xs text-gray-400 ml-2">Move mouse to cancel</p>
+            <div className="flex items-center gap-3">
+              <div className="relative flex h-2.5 w-2.5">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500"></span>
+              </div>
+              <p className="text-sm font-medium">Vault locking in <span className="font-mono font-bold text-red-500 ml-1">{lockCountdown}s</span></p>
+            </div>
+            <p className="text-[11px] text-gray-500 dark:text-zinc-500 mt-1">Move mouse to abort</p>
           </motion.div>
         )}
       </AnimatePresence>
@@ -218,3 +222,4 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children, middlePane, acti
     </>
   );
 };
+

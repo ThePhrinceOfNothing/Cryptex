@@ -24,3 +24,4 @@ export class ErrorBoundary extends Component<{children: ReactNode}, {hasError: b
     return this.props.children;
   }
 }
+

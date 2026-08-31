@@ -45,50 +45,54 @@ export const VaultProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     if (totalMs === 0) return;
 
     const WARNING_MS = 15000; // 15 seconds warning
-    const idleMs = totalMs > WARNING_MS ? totalMs - WARNING_MS : totalMs / 2;
-    
-    let idleTimeout: ReturnType<typeof setTimeout>;
-    let warningInterval: ReturnType<typeof setInterval>;
-    let lockTimeout: ReturnType<typeof setTimeout>;
+    let lastActivity = Date.now();
+    let isWarningPhase = false;
 
-    const resetTimer = () => {
-      clearTimeout(idleTimeout);
-      clearInterval(warningInterval);
-      clearTimeout(lockTimeout);
-      setLockCountdown(null);
-
-      idleTimeout = setTimeout(() => {
-        let remaining = WARNING_MS / 1000;
-        setLockCountdown(remaining);
-        
-        warningInterval = setInterval(() => {
-          remaining -= 1;
-          setLockCountdown(remaining);
-        }, 1000);
-
-        lockTimeout = setTimeout(() => {
-          clearInterval(warningInterval);
-          lockVault();
-        }, WARNING_MS);
-
-      }, idleMs);
+    const handleActivity = () => {
+      lastActivity = Date.now();
+      if (isWarningPhase) {
+        isWarningPhase = false;
+        setLockCountdown(null);
+      }
     };
 
-    resetTimer();
+    const interval = setInterval(() => {
+      const idleTime = Date.now() - lastActivity;
 
-    window.addEventListener('mousemove', resetTimer);
-    window.addEventListener('keydown', resetTimer);
-    window.addEventListener('click', resetTimer);
-    window.addEventListener('scroll', resetTimer);
+      if (idleTime >= totalMs) {
+        clearInterval(interval);
+        lockVault();
+      } else if (idleTime >= totalMs - WARNING_MS) {
+        if (!isWarningPhase) {
+          isWarningPhase = true;
+        }
+        const remaining = Math.ceil((totalMs - idleTime) / 1000);
+        setLockCountdown(remaining > 0 ? remaining : 1);
+      }
+    }, 1000);
+
+    let throttleTimer: ReturnType<typeof setTimeout> | null = null;
+    const throttledActivity = () => {
+      if (!throttleTimer) {
+        throttleTimer = setTimeout(() => {
+          handleActivity();
+          throttleTimer = null;
+        }, 300);
+      }
+    };
+
+    window.addEventListener('mousemove', throttledActivity);
+    window.addEventListener('keydown', handleActivity);
+    window.addEventListener('click', handleActivity);
+    window.addEventListener('scroll', throttledActivity);
 
     return () => {
-      clearTimeout(idleTimeout);
-      clearInterval(warningInterval);
-      clearTimeout(lockTimeout);
-      window.removeEventListener('mousemove', resetTimer);
-      window.removeEventListener('keydown', resetTimer);
-      window.removeEventListener('click', resetTimer);
-      window.removeEventListener('scroll', resetTimer);
+      clearInterval(interval);
+      if (throttleTimer) clearTimeout(throttleTimer);
+      window.removeEventListener('mousemove', throttledActivity);
+      window.removeEventListener('keydown', handleActivity);
+      window.removeEventListener('click', handleActivity);
+      window.removeEventListener('scroll', throttledActivity);
     };
   }, [isLocked, lockVault, vaultData?.settings?.autoLockTimer]);
 
@@ -121,7 +125,16 @@ export const VaultProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       throw new Error("Vault is locked or missing keys");
     }
     
-    const updatedData = { ...vaultData, ...newData };
+    // Auto-log activity for the dashboard heatmap
+    const today = new Date().toISOString().split('T')[0];
+    const activityLog = { ...(vaultData.activityLog || {}) };
+    // Only increment if we aren't explicitly updating settings to prevent 
+    // visual tweaks from counting as meaningful "work" activity
+    if (!newData.settings) {
+      activityLog[today] = (activityLog[today] || 0) + 1;
+    }
+    
+    const updatedData = { ...vaultData, activityLog, ...newData };
     
     // Optimistic update in RAM
     setVaultData(updatedData);
@@ -171,3 +184,4 @@ export const useVault = (): VaultContextState => {
   }
   return context;
 };
+

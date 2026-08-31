@@ -1,8 +1,8 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
-  "productName": "Enclave",
-  "version": "1.1.8",
-  "identifier": "com.enclave.app",
+  "productName": "Cryptex",
+  "version": "1.1.9",
+  "identifier": "com.cryptex.app",
   "build": {
     "frontendDist": "../dist",
     "devUrl": "http://localhost:5173",
@@ -12,7 +12,7 @@
   "app": {
     "windows": [
       {
-        "title": "Enclave",
+        "title": "Cryptex",
         "width": 1100,
         "height": 700,
         "minWidth": 800,
@@ -42,8 +42,11 @@
     "updater": {
       "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IENCOTBGQTkxREQxNjU5REIKUldUYldSYmRrZnFReTN2aDZqeERHbWltdlZTdkRmYXdVeEFVT2hLWEtTdlF2b1UrMHljZU5GSjEK",
       "endpoints": [
-        "https://github.com/ThePhrinceOfNothing/Enclave/releases/latest/download/latest.json"
+        "https://github.com/ThePhrinceOfNothing/Cryptex/releases/latest/download/latest.json"
       ]
     }
   }
 }
+
+
+

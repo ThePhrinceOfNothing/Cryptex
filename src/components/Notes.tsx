@@ -1,47 +1,109 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useVault } from '../context/VaultContext';
-import { Search, Plus, FileText, Trash2, ShieldCheck, Clock, Check, Bold, Italic, Heading1, Heading2, List, ListOrdered, Quote, Code } from 'lucide-react';
-import { motion } from 'framer-motion';
-import { EmptyState } from './EmptyState';
-import type { Note } from '../lib/vault';
+import { Search, Plus, FileText, Folder, FolderOpen, Trash2, ChevronRight, ChevronDown, Download, Link as LinkIcon, MoreVertical, Check } from 'lucide-react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
+import Image from '@tiptap/extension-image';
+import CodeBlockLowlight from '@tiptap/extension-code-block-lowlight';
+import Mention from '@tiptap/extension-mention';
+import { common, createLowlight } from 'lowlight';
+import { motion, AnimatePresence } from 'framer-motion';
+import html2pdf from 'html2pdf.js';
 
-// ---- NotesList (Middle Pane) ----
+import { EmptyState } from './EmptyState';
+import { ConfirmModal } from './ConfirmModal';
+import { SlashCommands, slashSuggestion } from './editor/SlashCommand';
+import { getNoteMentionSuggestion } from './editor/NoteLink';
 
-interface NotesListProps {
-  selectedId: string | null;
-  onSelect: (id: string) => void;
-  onCreateNew: () => void;
-}
+import 'highlight.js/styles/github-dark.css'; // Add basic highlight css
 
-export const NotesList: React.FC<NotesListProps> = ({ selectedId, onSelect, onCreateNew }) => {
-  const { vaultData } = useVault();
+import { PromptModal } from './PromptModal';
+
+const lowlight = createLowlight(common);
+
+// ---- NotesList (Middle Pane - Folders & Notes) ----
+export const NotesList: React.FC<{ selectedId: string | null; onSelect: (id: string) => void }> = ({ selectedId, onSelect }) => {
+  const { vaultData, updateVaultData } = useVault();
   const [searchQuery, setSearchQuery] = useState('');
+  const [isPromptOpen, setIsPromptOpen] = useState(false);
   
-  const notes: Note[] = vaultData?.notes || [];
-  
-  const filteredNotes = useMemo(() => {
-    const sorted = [...notes].sort((a, b) => b.updatedAt - a.updatedAt);
-    if (!searchQuery.trim()) return sorted;
-    const query = searchQuery.toLowerCase();
-    return sorted.filter(n => n.title.toLowerCase().includes(query) || n.content.toLowerCase().includes(query));
-  }, [notes, searchQuery]);
+  const folders = vaultData?.noteFolders || [];
+  const notes = vaultData?.notes || [];
+
+  const handleCreateNote = async (folderId?: string) => {
+    const newId = crypto.randomUUID();
+    const newNote = { id: newId, title: 'Untitled Note', content: '', updatedAt: Date.now(), folderId };
+    await updateVaultData({ notes: [...notes, newNote] });
+    onSelect(newId);
+  };
+
+  const handleCreateFolder = async (name: string) => {
+    const newFolder = { id: crypto.randomUUID(), name, isExpanded: true };
+    await updateVaultData({ noteFolders: [...folders, newFolder] });
+  };
+
+  const toggleFolder = async (id: string) => {
+    const updated = folders.map(f => f.id === id ? { ...f, isExpanded: !f.isExpanded } : f);
+    await updateVaultData({ noteFolders: updated });
+  };
+
+  // Very basic recursive renderer for 1 level for simplicity, but can be scaled
+  const renderItems = (parentId?: string, depth = 0) => {
+    const currentFolders = folders.filter(f => f.parentId === parentId);
+    const currentNotes = notes.filter(n => n.folderId === parentId);
+
+    // If searching, flatten everything
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      const matchedNotes = notes.filter(n => n.title.toLowerCase().includes(q) || n.content.toLowerCase().includes(q));
+      return matchedNotes.map(note => (
+        <NoteItem key={note.id} note={note} selectedId={selectedId} onSelect={onSelect} depth={0} />
+      ));
+    }
+
+    return (
+      <div className="space-y-1">
+        {currentFolders.map(folder => (
+          <div key={folder.id}>
+            <div 
+              onClick={() => toggleFolder(folder.id)}
+              className="flex items-center gap-2 w-full p-2 rounded-md hover:bg-gray-100 dark:hover:bg-zinc-900 cursor-pointer text-gray-700 dark:text-zinc-300"
+              style={{ paddingLeft: `${(depth * 12) + 8}px` }}
+            >
+              {folder.isExpanded ? <ChevronDown size={14} className="opacity-50" /> : <ChevronRight size={14} className="opacity-50" />}
+              {folder.isExpanded ? <FolderOpen size={16} className="text-accent" /> : <Folder size={16} className="text-accent" />}
+              <span className="font-medium text-sm flex-1 truncate">{folder.name}</span>
+            </div>
+            {folder.isExpanded && renderItems(folder.id, depth + 1)}
+          </div>
+        ))}
+        {currentNotes.map(note => (
+          <NoteItem key={note.id} note={note} selectedId={selectedId} onSelect={onSelect} depth={depth} />
+        ))}
+      </div>
+    );
+  };
 
   return (
     <div className="flex flex-col h-full bg-white dark:bg-[#121214]">
+      <PromptModal
+        isOpen={isPromptOpen}
+        onClose={() => setIsPromptOpen(false)}
+        onSubmit={handleCreateFolder}
+        title="New Folder"
+        placeholder="Enter folder name..."
+      />
       <div className="h-16 flex items-center justify-between px-6 border-b border-gray-200 dark:border-white/10 shrink-0">
-        <h2 className="font-semibold text-gray-900 dark:text-zinc-100">Secure Notes</h2>
-        <motion.button 
-          onClick={onCreateNew}
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          className="w-8 h-8 flex items-center justify-center bg-white dark:bg-[#121214] border border-gray-200 dark:border-white/10 hover:border-accent hover:text-accent rounded-md text-gray-600 dark:text-zinc-400 transition-colors shadow-sm"
-          title="New Note"
-        >
-          <Plus size={16} />
-        </motion.button>
+        <h2 className="font-semibold text-gray-900 dark:text-zinc-100">Knowledge Graph</h2>
+        <div className="flex items-center gap-2">
+          <button onClick={() => setIsPromptOpen(true)} className="w-8 h-8 flex items-center justify-center hover:bg-gray-100 dark:hover:bg-zinc-900 rounded-md transition-colors text-gray-500" title="New Folder">
+            <Folder size={16} />
+          </button>
+          <button onClick={() => handleCreateNote()} className="w-8 h-8 flex items-center justify-center bg-white dark:bg-[#121214] border border-gray-200 dark:border-white/10 hover:border-accent hover:text-accent rounded-md transition-colors text-gray-500 shadow-sm" title="New Note">
+            <Plus size={16} />
+          </button>
+        </div>
       </div>
       
       <div className="p-4 border-b border-gray-200 dark:border-white/10 shrink-0">
@@ -52,268 +114,183 @@ export const NotesList: React.FC<NotesListProps> = ({ selectedId, onSelect, onCr
             placeholder="Search notes..." 
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-9 pr-4 py-2 bg-gray-50 dark:bg-zinc-900/50 border border-gray-200 dark:border-white/10 rounded-md text-sm text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent focus:bg-white dark:bg-[#121214] transition-colors"
+            className="w-full pl-9 pr-4 py-2 bg-gray-50 dark:bg-zinc-900/50 border border-gray-200 dark:border-white/10 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-accent"
           />
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-2 space-y-1">
-        {filteredNotes.length === 0 ? (
-          <p className="text-gray-400 text-xs text-center mt-6">No notes found.</p>
+      <div className="flex-1 overflow-y-auto p-2">
+        {folders.length === 0 && notes.length === 0 ? (
+          <p className="text-gray-400 text-xs text-center mt-6">No notes yet.</p>
         ) : (
-          filteredNotes.map(note => (
-            <button
-              key={note.id}
-              onClick={() => onSelect(note.id)}
-              className={`w-full text-left p-3 rounded-md border flex items-start gap-3 transition-colors ${
-                selectedId === note.id 
-                  ? 'bg-accent/5 border-accent shadow-sm' 
-                  : 'bg-white dark:bg-[#121214] border-transparent hover:border-gray-200 dark:border-white/10 hover:bg-gray-50 dark:hover:bg-zinc-900 dark:bg-zinc-900/50'
-              }`}
-            >
-              <div className={`mt-0.5 shrink-0 ${selectedId === note.id ? 'text-accent' : 'text-gray-400'}`}>
-                <FileText size={16} />
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className={`font-medium text-sm truncate ${selectedId === note.id ? 'text-accent' : 'text-gray-900 dark:text-zinc-100'}`}>
-                  {note.title || 'Untitled Note'}
-                </p>
-                <p className="text-xs text-gray-500 dark:text-zinc-500 truncate mt-1">
-                  {note.content.replace(/<[^>]*>?/gm, '').substring(0, 40) || 'No additional text...'}
-                </p>
-                <p className="text-[10px] text-gray-400 mt-2 flex items-center gap-1">
-                  <Clock size={10} />
-                  {new Date(note.updatedAt).toLocaleDateString()}
-                </p>
-              </div>
-            </button>
-          ))
+          renderItems(undefined, 0)
         )}
       </div>
     </div>
   );
 };
 
+const NoteItem = ({ note, selectedId, onSelect, depth }: any) => (
+  <button
+    onClick={() => onSelect(note.id)}
+    className={`w-full text-left p-2 rounded-md flex items-center gap-2 transition-colors ${
+      selectedId === note.id ? 'bg-accent/10 text-accent' : 'hover:bg-gray-100 dark:hover:bg-zinc-900 text-gray-700 dark:text-zinc-300'
+    }`}
+    style={{ paddingLeft: `${(depth * 12) + 8}px` }}
+  >
+    <FileText size={16} className={selectedId === note.id ? "text-accent" : "opacity-60"} />
+    <span className="font-medium text-sm truncate flex-1">{note.title || 'Untitled'}</span>
+  </button>
+);
 
-// ---- NotesEditor (Main Workspace) ----
-
-interface NotesEditorProps {
-  selectedId: string | null;
-  isCreating: boolean;
-  onSaveComplete: (id: string) => void;
-  onDeleteComplete: () => void;
-}
-
-export const NotesEditor: React.FC<NotesEditorProps> = ({ selectedId, isCreating, onSaveComplete, onDeleteComplete }) => {
+// ---- NotesEditor (Right Pane) ----
+export const NotesEditor: React.FC<{ selectedId: string | null; onSelect: (id: string) => void }> = ({ selectedId, onSelect }) => {
   const { vaultData, updateVaultData } = useVault();
-  const notes: Note[] = vaultData?.notes || [];
-  
+  const notes = vaultData?.notes || [];
   const selectedNote = notes.find(n => n.id === selectedId);
-
-  const [title, setTitle] = useState('');
-  const [content, setContent] = useState('');
-  const [updatedAt, setUpdatedAt] = useState<number | null>(null);
+  const editorRef = useRef<HTMLDivElement>(null);
   
-  const [isDirty, setIsDirty] = useState(false);
-  const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [title, setTitle] = useState('');
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
+  // Configure Tiptap
   const editor = useEditor({
     extensions: [
       StarterKit,
-      Placeholder.configure({
-        placeholder: 'Start writing securely...',
-        emptyEditorClass: 'is-editor-empty',
-      }),
+      Placeholder.configure({ placeholder: "Type '/' for commands or '[[' to link a note. (Ctrl+Click links to open)" }),
+      Image,
+      CodeBlockLowlight.configure({ lowlight }),
+      SlashCommands.configure({ suggestion: slashSuggestion }),
+      Mention.configure({ 
+        suggestion: getNoteMentionSuggestion(notes),
+        HTMLAttributes: {
+          class: 'mention bg-accent/20 text-accent px-1.5 py-0.5 rounded cursor-pointer hover:bg-accent/30 transition-colors font-medium',
+        },
+      })
     ],
-    content,
-    onUpdate: ({ editor }) => {
-      setContent(editor.getHTML());
-      setIsDirty(true);
+    content: selectedNote?.content || '',
+    editorProps: {
+      attributes: {
+        class: 'prose prose-sm dark:prose-invert max-w-none focus:outline-none min-h-[400px]',
+      },
+      handleDOMEvents: {
+        click: (view, event) => {
+          // Require Ctrl (Windows/Linux) or Cmd (Mac) to follow links
+          if (!event.ctrlKey && !event.metaKey) return false;
+
+          let target = event.target as Node | null;
+          while (target) {
+            if (target instanceof HTMLElement && target.classList.contains('mention')) {
+              const id = target.getAttribute('data-id');
+              if (id) {
+                onSelect(id);
+                event.preventDefault();
+                return true;
+              }
+            }
+            target = target.parentNode;
+          }
+          return false;
+        }
+      }
     },
-  });
+    onUpdate: ({ editor }) => {
+      handleSaveContent(editor.getHTML());
+    },
+  }, [selectedId]); // Re-init when ID changes so it gets the fresh notes array for mentions
 
+  // Sync title
   useEffect(() => {
-    if (isCreating) {
-      setTitle('');
-      setContent('');
-      setUpdatedAt(null);
-      setIsDirty(false);
-      if (editor) editor.commands.setContent('');
-    } else if (selectedNote) {
+    if (selectedNote) {
       setTitle(selectedNote.title);
-      setContent(selectedNote.content);
-      setUpdatedAt(selectedNote.updatedAt);
-      setIsDirty(false);
-      if (editor) editor.commands.setContent(selectedNote.content);
+      // We don't set editor content here because useEditor's dependency array handles re-mounting
     }
-  }, [selectedId, isCreating, selectedNote, editor]);
+  }, [selectedNote?.id]);
 
-  const handleSave = async (currentTitle: string, currentContent: string) => {
-    if (!currentTitle.trim() && !currentContent.trim()) return;
-
-    const now = Date.now();
-    if (isCreating) {
-      const newId = crypto.randomUUID();
-      const newNote: Note = { id: newId, title: currentTitle.trim(), content: currentContent, updatedAt: now };
-      await updateVaultData({ notes: [...notes, newNote] });
-      onSaveComplete(newId);
-      setUpdatedAt(now);
-    } else if (selectedId) {
-      const updatedNotes = notes.map(n => 
-        n.id === selectedId ? { ...n, title: currentTitle.trim(), content: currentContent, updatedAt: now } : n
-      );
-      await updateVaultData({ notes: updatedNotes });
-      setUpdatedAt(now);
-    }
-    setIsDirty(false);
+  const handleSaveTitle = async (newTitle: string) => {
+    setTitle(newTitle);
+    if (!selectedId) return;
+    const updated = notes.map(n => n.id === selectedId ? { ...n, title: newTitle, updatedAt: Date.now() } : n);
+    await updateVaultData({ notes: updated });
   };
 
-  useEffect(() => {
-    if (!isDirty) return;
-    if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
-    saveTimeoutRef.current = setTimeout(() => {
-      handleSave(title, content);
-    }, 1000);
-    return () => { if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current); };
-  }, [title, content, isDirty]);
+  const handleSaveContent = async (html: string) => {
+    if (!selectedId) return;
+    const updated = notes.map(n => n.id === selectedId ? { ...n, content: html, updatedAt: Date.now() } : n);
+    await updateVaultData({ notes: updated });
+  };
 
   const handleDelete = async () => {
     if (!selectedId) return;
-    if (confirm('Are you sure you want to delete this note?')) {
-      const updated = notes.filter(n => n.id !== selectedId);
-      await updateVaultData({ notes: updated });
-      onDeleteComplete();
-    }
+    const updated = notes.filter(n => n.id !== selectedId);
+    await updateVaultData({ notes: updated });
+    setIsDeleteModalOpen(false);
   };
 
-  if (!isCreating && !selectedNote) {
+  const exportPDF = () => {
+    if (!editorRef.current) return;
+    const opt = {
+      margin: 1,
+      filename: `${title || 'note'}.pdf`,
+      image: { type: 'jpeg', quality: 0.98 },
+      html2canvas: { scale: 2 },
+      jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
+    };
+    html2pdf().set(opt).from(editorRef.current).save();
+  };
+
+  if (!selectedNote) {
     return (
       <EmptyState 
-        icon={ShieldCheck}
-        title="Secure Notes"
-        subtitle="Your notes are encrypted in memory. Select a note from the sidebar or create a new one."
+        icon={FileText}
+        title="Knowledge Graph"
+        subtitle="Create a new note or select one from the sidebar."
       />
     );
   }
 
   return (
-    <div className="flex flex-col h-full bg-white dark:bg-[#121214] relative">
-      {/* Top Header / Actions */}
-      <div className="absolute top-4 right-8 flex items-center gap-4 z-10">
-        <span className="text-xs text-gray-400 flex items-center gap-1.5">
-          {isDirty ? (
-            <>
-              <div className="w-1.5 h-1.5 bg-accent rounded-full animate-pulse" />
-              Unsaved changes
-            </>
-          ) : (
-            <>
-              <Check className="w-3 h-3" />
-              Saved
-            </>
-          )}
-        </span>
-        
-        {!isCreating && (
-          <motion.button 
-            onClick={handleDelete}
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-md transition-colors"
-            title="Delete Note"
+    <>
+      <ConfirmModal
+        isOpen={isDeleteModalOpen}
+        onCancel={() => setIsDeleteModalOpen(false)}
+        onConfirm={handleDelete}
+        title="Delete Note"
+        message={`Are you sure you want to permanently delete "${selectedNote.title}"?`}
+      />
+      
+      <div className="h-full flex flex-col max-w-4xl mx-auto overflow-y-auto">
+        {/* Toolbar */}
+        <div className="flex justify-end items-center p-6 pb-0 shrink-0 gap-2">
+          <button 
+            onClick={exportPDF}
+            className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium bg-white dark:bg-zinc-800 border border-gray-200 dark:border-white/10 hover:border-accent hover:text-accent rounded-md transition-colors"
           >
-            <Trash2 className="w-4 h-4" />
-          </motion.button>
-        )}
-      </div>
+            <Download size={14} /> PDF
+          </button>
+          <button 
+            onClick={() => setIsDeleteModalOpen(true)}
+            className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium bg-white dark:bg-zinc-800 border border-gray-200 dark:border-white/10 hover:border-red-500 hover:text-red-500 rounded-md transition-colors text-gray-500"
+          >
+            <Trash2 size={14} /> Delete
+          </button>
+        </div>
 
-      <div className="flex-1 flex flex-col max-w-4xl w-full mx-auto p-10 pt-16">
-        <input
-          type="text"
-          value={title}
-          onChange={(e) => {
-            setTitle(e.target.value);
-            setIsDirty(true);
-          }}
-          placeholder="Note Title"
-          className="w-full text-4xl font-bold text-gray-900 dark:text-zinc-100 bg-transparent border-none focus:outline-none focus:ring-0 placeholder-gray-300 mb-2"
-        />
-        {updatedAt && !isCreating && (
-          <p className="text-xs text-gray-400 mb-4 flex items-center gap-1">
-            <Clock size={12} />
-            Last edited {new Date(updatedAt).toLocaleString()}
-          </p>
-        )}
-
-        {/* Formatting Toolbar */}
-        {editor && (
-          <div className="flex flex-wrap items-center gap-1 mb-4 p-1.5 bg-gray-50 dark:bg-zinc-900/50 border border-gray-200 dark:border-white/10 rounded-lg shrink-0">
-            <button
-              onClick={() => editor.chain().focus().toggleBold().run()}
-              className={`p-1.5 rounded transition-colors ${editor.isActive('bold') ? 'bg-white dark:bg-[#121214] text-accent shadow-sm' : 'text-gray-500 dark:text-zinc-500 hover:bg-gray-200 dark:hover:bg-zinc-700 dark:bg-zinc-800 hover:text-gray-900 dark:text-zinc-100'}`}
-              title="Bold"
-            >
-              <Bold size={16} />
-            </button>
-            <button
-              onClick={() => editor.chain().focus().toggleItalic().run()}
-              className={`p-1.5 rounded transition-colors ${editor.isActive('italic') ? 'bg-white dark:bg-[#121214] text-accent shadow-sm' : 'text-gray-500 dark:text-zinc-500 hover:bg-gray-200 dark:hover:bg-zinc-700 dark:bg-zinc-800 hover:text-gray-900 dark:text-zinc-100'}`}
-              title="Italic"
-            >
-              <Italic size={16} />
-            </button>
-            <div className="w-px h-4 bg-gray-300 mx-1" />
-            <button
-              onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
-              className={`p-1.5 rounded transition-colors ${editor.isActive('heading', { level: 1 }) ? 'bg-white dark:bg-[#121214] text-accent shadow-sm' : 'text-gray-500 dark:text-zinc-500 hover:bg-gray-200 dark:hover:bg-zinc-700 dark:bg-zinc-800 hover:text-gray-900 dark:text-zinc-100'}`}
-              title="Heading 1"
-            >
-              <Heading1 size={16} />
-            </button>
-            <button
-              onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
-              className={`p-1.5 rounded transition-colors ${editor.isActive('heading', { level: 2 }) ? 'bg-white dark:bg-[#121214] text-accent shadow-sm' : 'text-gray-500 dark:text-zinc-500 hover:bg-gray-200 dark:hover:bg-zinc-700 dark:bg-zinc-800 hover:text-gray-900 dark:text-zinc-100'}`}
-              title="Heading 2"
-            >
-              <Heading2 size={16} />
-            </button>
-            <div className="w-px h-4 bg-gray-300 mx-1" />
-            <button
-              onClick={() => editor.chain().focus().toggleBulletList().run()}
-              className={`p-1.5 rounded transition-colors ${editor.isActive('bulletList') ? 'bg-white dark:bg-[#121214] text-accent shadow-sm' : 'text-gray-500 dark:text-zinc-500 hover:bg-gray-200 dark:hover:bg-zinc-700 dark:bg-zinc-800 hover:text-gray-900 dark:text-zinc-100'}`}
-              title="Bullet List"
-            >
-              <List size={16} />
-            </button>
-            <button
-              onClick={() => editor.chain().focus().toggleOrderedList().run()}
-              className={`p-1.5 rounded transition-colors ${editor.isActive('orderedList') ? 'bg-white dark:bg-[#121214] text-accent shadow-sm' : 'text-gray-500 dark:text-zinc-500 hover:bg-gray-200 dark:hover:bg-zinc-700 dark:bg-zinc-800 hover:text-gray-900 dark:text-zinc-100'}`}
-              title="Ordered List"
-            >
-              <ListOrdered size={16} />
-            </button>
-            <div className="w-px h-4 bg-gray-300 mx-1" />
-            <button
-              onClick={() => editor.chain().focus().toggleBlockquote().run()}
-              className={`p-1.5 rounded transition-colors ${editor.isActive('blockquote') ? 'bg-white dark:bg-[#121214] text-accent shadow-sm' : 'text-gray-500 dark:text-zinc-500 hover:bg-gray-200 dark:hover:bg-zinc-700 dark:bg-zinc-800 hover:text-gray-900 dark:text-zinc-100'}`}
-              title="Blockquote"
-            >
-              <Quote size={16} />
-            </button>
-            <button
-              onClick={() => editor.chain().focus().toggleCodeBlock().run()}
-              className={`p-1.5 rounded transition-colors ${editor.isActive('codeBlock') ? 'bg-white dark:bg-[#121214] text-accent shadow-sm' : 'text-gray-500 dark:text-zinc-500 hover:bg-gray-200 dark:hover:bg-zinc-700 dark:bg-zinc-800 hover:text-gray-900 dark:text-zinc-100'}`}
-              title="Code Block"
-            >
-              <Code size={16} />
-            </button>
+        {/* Editor Wrapper */}
+        <div className="p-10 pt-6 flex-1" ref={editorRef}>
+          <input
+            type="text"
+            value={title}
+            onChange={(e) => handleSaveTitle(e.target.value)}
+            placeholder="Note Title"
+            className="w-full text-4xl font-bold bg-transparent text-gray-900 dark:text-white focus:outline-none mb-8 placeholder-gray-300 dark:placeholder-zinc-700"
+          />
+          <div className="min-h-[500px]">
+            <EditorContent editor={editor} />
           </div>
-        )}
-        
-        <div className="flex-1 overflow-y-auto">
-          <EditorContent editor={editor} className="w-full h-full" />
         </div>
       </div>
-    </div>
+    </>
   );
 };
+

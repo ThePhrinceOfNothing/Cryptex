@@ -25,3 +25,4 @@ export async function saveAppConfig(config: AppConfig): Promise<void> {
     throw error;
   }
 }
+

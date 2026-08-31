@@ -23,23 +23,67 @@ export interface VaultSettings {
   lastSeenVersion?: string;
 }
 
-export interface VaultData {
-  todos: any[];
-  credentials: any[];
-  notes?: Note[];
-  transactions?: Transaction[];
-  events?: CalendarEvent[];
-  settings?: VaultSettings;
-  attachments?: Attachment[];
-}
-
-export interface Attachment {
+export interface CredentialFolder {
   id: string;
   name: string;
-  type: string;
-  size: number;
-  dataBase64: string;
-  addedAt: number;
+  color?: string;
+}
+
+export interface CustomField {
+  id: string;
+  key: string;
+  value: string;
+  isSecret: boolean;
+}
+
+export interface Credential {
+  id: string;
+  title: string;
+  username: string;
+  password?: string; // Optional if only using custom fields
+  url?: string;
+  folderId?: string;
+  totpSecret?: string;
+  customFields?: CustomField[];
+}
+
+export interface NoteFolder {
+  id: string;
+  name: string;
+  parentId?: string; // For infinite nesting
+  isExpanded?: boolean;
+}
+
+export interface Subtask {
+  id: string;
+  title: string;
+  isCompleted: boolean;
+}
+
+export interface Task {
+  id: string;
+  title: string;
+  description: string;
+  status: 'todo' | 'in-progress' | 'done';
+  priority: 'low' | 'medium' | 'high' | 'urgent';
+  subtasks: Subtask[];
+  createdAt: number;
+  dueDate?: number;
+}
+
+export interface VaultData {
+  todos?: any[]; // legacy
+  tasks?: Task[];
+  credentials: Credential[];
+  credentialFolders?: CredentialFolder[];
+  notes?: Note[];
+  noteFolders?: NoteFolder[];
+  transactions?: Transaction[];
+  wallets?: Wallet[];
+  budgets?: Budget[];
+  events?: CalendarEvent[];
+  settings?: VaultSettings;
+  activityLog?: Record<string, number>; // YYYY-MM-DD -> count
 }
 
 export interface Note {
@@ -47,20 +91,51 @@ export interface Note {
   title: string;
   content: string;
   updatedAt: number;
+  folderId?: string;
+}
+
+export interface TransactionSplit {
+  id: string;
+  category: string;
+  amount: number;
+  memo?: string;
 }
 
 export interface Transaction {
   id: string;
-  date: string;
+  date: string; // ISO string
   category: string;
   amount: number;
   type: 'in' | 'out';
+  description?: string;
+  walletId?: string;
+  tags?: string[];
+  recurring?: 'none' | 'daily' | 'weekly' | 'monthly' | 'yearly';
+  lastProcessed?: number;
+  splits?: TransactionSplit[];
+  memo?: string;
+}
+
+export interface Wallet {
+  id: string;
+  name: string;
+  balance: number;
+}
+
+export interface Budget {
+  category: string;
+  limit: number;
 }
 
 export interface CalendarEvent {
   id: string;
-  date: string;
+  date: string; // ISO format or YYYY-MM-DD
+  time?: string; // HH:MM
   title: string;
+  description?: string;
+  color?: 'blue' | 'red' | 'green' | 'yellow' | 'purple';
+  recurring?: 'none' | 'daily' | 'weekly' | 'monthly' | 'yearly';
+  notified?: boolean;
 }
 
 export async function vaultExists(): Promise<boolean> {
@@ -136,3 +211,4 @@ export async function loadVault(password: string): Promise<{ data: VaultData, ke
   const data = await loadVaultWithKey(key, payload);
   return { data, key, salt };
 }
+
