@@ -3,7 +3,7 @@ import { useVault } from '../context/VaultContext';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import type { DropResult } from '@hello-pangea/dnd';
 import { Plus, Clock, CheckCircle2, X, Trash2, GripVertical, CircleDashed, ListTodo, Play, Pause, RotateCcw, ArrowUpDown } from 'lucide-react';
-import type { Task, Subtask } from '../lib/vault';
+import type { Task } from '../lib/vault';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ConfirmModal } from './ConfirmModal';
 
@@ -384,4 +384,5 @@ export const Tasks: React.FC = () => {
     </div>
   );
 };
+
 

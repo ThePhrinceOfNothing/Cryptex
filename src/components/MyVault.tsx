@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { useVault } from '../context/VaultContext';
 import { Search, Plus, Key, Copy, Check, Eye, EyeOff, Trash2, ShieldCheck, Globe, User as UserIcon, Link2, ShieldAlert, PlusCircle } from 'lucide-react';
 import { writeText } from '@tauri-apps/plugin-clipboard-manager';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { EmptyState } from './EmptyState';
 import { ConfirmModal } from './ConfirmModal';
 import { PasswordGeneratorModal } from './PasswordGeneratorModal';
@@ -506,4 +506,5 @@ export const MyVaultDetails: React.FC<MyVaultDetailsProps> = ({ selectedId, isCr
     </>
   );
 };
+
 

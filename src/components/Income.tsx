@@ -19,7 +19,6 @@ const CURRENCY_SYMBOLS: Record<string, string> = {
 export const Income: React.FC = () => {
   const { vaultData, updateVaultData } = useVault();
   const transactions = vaultData?.transactions || [];
-  const budgets = vaultData?.budgets || [];
   const curr = CURRENCY_SYMBOLS[vaultData?.settings?.currency || 'USD'] || '$';
   
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -180,7 +179,7 @@ export const Income: React.FC = () => {
                       dataKey="value"
                       stroke="none"
                     >
-                      {pieData.map((index) => (
+                      {pieData.map((entry, index) => (
                         <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                       ))}
                     </Pie>
@@ -430,7 +429,7 @@ const TransactionModal: React.FC<{ isOpen: boolean, onClose: () => void, tx: Tra
             
             {isSplit && (
               <div className="space-y-3 bg-gray-50 dark:bg-zinc-900/50 p-4 rounded-xl border border-gray-200 dark:border-white/10">
-                {splits.map((split, i) => (
+                {splits.map((split) => (
                   <div key={split.id} className="flex items-center gap-2">
                     <select value={split.category} onChange={e => setSplits(splits.map(s => s.id === split.id ? {...s, category: e.target.value} : s))} className="flex-1 px-3 py-2 bg-white dark:bg-[#18181b] border border-gray-200 dark:border-white/10 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-accent">
                       <option value="Groceries">Groceries</option>
@@ -461,6 +460,7 @@ const TransactionModal: React.FC<{ isOpen: boolean, onClose: () => void, tx: Tra
     </div>
   );
 };
+
 
 
 

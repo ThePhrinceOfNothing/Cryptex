@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useVault } from '../context/VaultContext';
-import { Search, Plus, FileText, Folder, FolderOpen, Trash2, ChevronRight, ChevronDown, Download, Link as Check } from 'lucide-react';
+import { Search, Plus, FileText, Folder, FolderOpen, Trash2, ChevronRight, ChevronDown, Download } from 'lucide-react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
@@ -8,7 +8,6 @@ import Image from '@tiptap/extension-image';
 import CodeBlockLowlight from '@tiptap/extension-code-block-lowlight';
 import Mention from '@tiptap/extension-mention';
 import { common, createLowlight } from 'lowlight';
-import { motion, AnimatePresence } from 'framer-motion';
 import html2pdf from 'html2pdf.js';
 
 import { EmptyState } from './EmptyState';
@@ -174,7 +173,7 @@ export const NotesEditor: React.FC<{ selectedId: string | null; onSelect: (id: s
         class: 'prose prose-sm dark:prose-invert max-w-none focus:outline-none min-h-[400px]',
       },
       handleDOMEvents: {
-        click: (view, event) => {
+        click: (_, event) => {
           // Require Ctrl (Windows/Linux) or Cmd (Mac) to follow links
           if (!event.ctrlKey && !event.metaKey) return false;
 
@@ -293,4 +292,5 @@ export const NotesEditor: React.FC<{ selectedId: string | null; onSelect: (id: s
     </>
   );
 };
+
 

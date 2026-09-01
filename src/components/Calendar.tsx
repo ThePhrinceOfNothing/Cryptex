@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useVault } from '../context/VaultContext';
 import { Calendar as CalendarIcon, Plus, ChevronLeft, ChevronRight, List, LayoutGrid, Clock, X, Trash2, BellRing } from 'lucide-react';
-import type { CalendarEvent, Task } from '../lib/vault';
+import type { CalendarEvent } from '../lib/vault';
 import { ConfirmModal } from './ConfirmModal';
 import { motion, AnimatePresence } from 'framer-motion';
 import { isPermissionGranted, requestPermission, sendNotification } from '@tauri-apps/plugin-notification';
@@ -415,4 +415,5 @@ const EventModal: React.FC<{ isOpen: boolean, onClose: () => void, initialDate: 
     </div>
   );
 };
+
 

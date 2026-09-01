@@ -167,7 +167,7 @@ export const PasswordGeneratorModal: React.FC<PasswordGeneratorModalProps> = ({ 
   );
 };
 
-const Checkbox = ({ label, checked, onChange }: { label: string, checked: boolean, onChange: (c: boolean) => void }) => (
+const Checkbox = ({ label, checked }: { label: string, checked: boolean, onChange: (c: boolean) => void }) => (
   <label className="flex items-center gap-3 cursor-pointer group">
     <div className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${
       checked ? 'bg-accent border-accent text-white' : 'bg-white dark:bg-black border-gray-300 dark:border-zinc-700 group-hover:border-accent/50'
@@ -177,4 +177,5 @@ const Checkbox = ({ label, checked, onChange }: { label: string, checked: boolea
     <span className="text-sm font-medium text-gray-700 dark:text-zinc-300 select-none">{label}</span>
   </label>
 );
+
 

@@ -1,6 +1,6 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { useVault } from '../context/VaultContext';
-import { Shield, ShieldAlert, ShieldCheck, Activity, Clock, FileText, CheckCircle, TrendingUp, Key, ChevronRight } from 'lucide-react';
+import { Shield, ShieldAlert, ShieldCheck, Activity, Clock, FileText, CheckSquare, Wallet, Lock, ChevronRight } from 'lucide-react';
 import { calculatePasswordStrength } from '../lib/passwordUtils';
 import { motion } from 'framer-motion';
 
@@ -108,20 +108,20 @@ export const Dashboard: React.FC<{ onNavigate?: (tab: string) => void }> = ({ on
 
       {/* Quick Action Bar */}
       <div className="flex flex-wrap gap-3 mb-10 shrink-0">
-        <ActionButton icon={Key} label="New Password" onClick={() => onNavigate?.('My Vault')} />
+        <ActionButton icon={Lock} label="New Entry" onClick={() => onNavigate?.('My Vault')} />
         <ActionButton icon={FileText} label="New Note" onClick={() => onNavigate?.('Notes')} />
-        <ActionButton icon={CheckCircle} label="Add Task" onClick={() => onNavigate?.('Tasks')} />
-        <ActionButton icon={TrendingUp} label="Log Expense" onClick={() => onNavigate?.('Income & Expense')} />
+        <ActionButton icon={CheckSquare} label="New Task" onClick={() => onNavigate?.('Tasks')} />
+        <ActionButton icon={Wallet} label="Add Transaction" onClick={() => onNavigate?.('Income')} />
       </div>
 
       {/* Masonry Widget Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 pb-10">
         
-        {/* Security Health Gauge */}
+        {/* Vault Security Gauge */}
         <div className="col-span-1 md:col-span-2 lg:col-span-1 bg-white dark:bg-[#121214] border border-gray-200 dark:border-white/10 p-6 rounded-2xl shadow-sm flex flex-col justify-between group hover:border-accent/50 transition-colors">
           <div className="flex items-center gap-2 mb-4">
             <Shield className="w-5 h-5 text-accent" />
-            <h3 className="font-semibold text-gray-900 dark:text-white">Security Health</h3>
+            <h3 className="font-semibold text-gray-900 dark:text-white">Vault Security</h3>
           </div>
           <div className="flex items-center justify-center flex-1 py-4">
             <div className="relative w-32 h-32 flex items-center justify-center">
@@ -140,9 +140,9 @@ export const Dashboard: React.FC<{ onNavigate?: (tab: string) => void }> = ({ on
           </div>
           <div className="text-center mt-2">
             {securityScore.weak > 0 ? (
-              <p className="text-xs text-red-500 font-medium flex items-center justify-center gap-1"><ShieldAlert className="w-3 h-3" /> {securityScore.weak} weak passwords</p>
+              <p className="text-xs text-red-500 font-medium flex items-center justify-center gap-1"><ShieldAlert className="w-3 h-3" /> {securityScore.weak} weak password{securityScore.weak === 1 ? '' : 's'}</p>
             ) : (
-              <p className="text-xs text-green-500 font-medium flex items-center justify-center gap-1"><ShieldCheck className="w-3 h-3" /> Vault is highly secure</p>
+              <p className="text-xs text-green-500 font-medium flex items-center justify-center gap-1"><ShieldCheck className="w-3 h-3" /> All passwords are strong</p>
             )}
           </div>
         </div>
@@ -152,7 +152,7 @@ export const Dashboard: React.FC<{ onNavigate?: (tab: string) => void }> = ({ on
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-2">
               <Activity className="w-5 h-5 text-accent" />
-              <h3 className="font-semibold text-gray-900 dark:text-white">Activity (90 Days)</h3>
+              <h3 className="font-semibold text-gray-900 dark:text-white">Recent Activity</h3>
             </div>
             <span className="text-xs text-gray-500 dark:text-zinc-500">{vaultData?.credentials?.length || 0} Total Items</span>
           </div>
@@ -172,10 +172,10 @@ export const Dashboard: React.FC<{ onNavigate?: (tab: string) => void }> = ({ on
         </div>
 
         {/* Mini Finances */}
-        <div className="col-span-1 md:col-span-1 lg:col-span-1 bg-gradient-to-br from-accent to-accent/80 border border-accent p-6 rounded-2xl shadow-lg shadow-accent/20 flex flex-col justify-between text-white group cursor-pointer hover:scale-[1.02] transition-transform" onClick={() => onNavigate?.('Income & Expense')}>
+        <div className="col-span-1 md:col-span-1 lg:col-span-1 bg-gradient-to-br from-accent to-accent/80 border border-accent p-6 rounded-2xl shadow-lg shadow-accent/20 flex flex-col justify-between text-white group cursor-pointer hover:scale-[1.02] transition-transform" onClick={() => onNavigate?.('Income')}>
           <div className="flex items-center gap-2 mb-4 opacity-90">
-            <TrendingUp className="w-5 h-5" />
-            <h3 className="font-semibold">Net Balance</h3>
+            <Wallet className="w-5 h-5" />
+            <h3 className="font-semibold">Total Balance</h3>
           </div>
           <div>
             <p className="text-4xl font-bold tracking-tight">{formatCurrency(balance)}</p>
@@ -187,8 +187,8 @@ export const Dashboard: React.FC<{ onNavigate?: (tab: string) => void }> = ({ on
         <div className="col-span-1 md:col-span-2 bg-white dark:bg-[#121214] border border-gray-200 dark:border-white/10 p-6 rounded-2xl shadow-sm flex flex-col group hover:border-accent/50 transition-colors cursor-pointer" onClick={() => onNavigate?.('Tasks')}>
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
-              <CheckCircle className="w-5 h-5 text-accent" />
-              <h3 className="font-semibold text-gray-900 dark:text-white">Pending Tasks</h3>
+              <CheckSquare className="w-5 h-5 text-accent" />
+            <h3 className="font-semibold text-gray-900 dark:text-white">Pending Tasks</h3>
             </div>
             <ChevronRight className="w-4 h-4 text-gray-400 group-hover:text-accent transition-colors" />
           </div>
@@ -245,4 +245,5 @@ const ActionButton = ({ icon: Icon, label, onClick }: { icon: any, label: string
     {label}
   </motion.button>
 );
+
 
