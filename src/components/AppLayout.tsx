@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import type { ReactNode } from 'react';
-import { LayoutDashboard, Lock, StickyNote, CheckSquare, Calendar, DollarSign, ChevronLeft, ChevronRight, User, Settings as SettingsIcon, Shield, Search } from 'lucide-react';
+import { LayoutDashboard, Lock, StickyNote, CheckSquare, Calendar, DollarSign, ChevronLeft, ChevronRight, User, Settings as SettingsIcon, Search } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useVault } from '../context/VaultContext';
 import { GlobalSearch } from './GlobalSearch';

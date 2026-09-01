@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useVault } from '../context/VaultContext';
-import { Search, Plus, Key, Copy, Check, Eye, EyeOff, Trash2, ShieldCheck, Globe, User as UserIcon, Link2, ShieldAlert, Clock, PlusCircle } from 'lucide-react';
+import { Search, Plus, Key, Copy, Check, Eye, EyeOff, Trash2, ShieldCheck, Globe, User as UserIcon, Link2, ShieldAlert, PlusCircle } from 'lucide-react';
 import { writeText } from '@tauri-apps/plugin-clipboard-manager';
 import { motion, AnimatePresence } from 'framer-motion';
 import { EmptyState } from './EmptyState';

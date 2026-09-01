@@ -1,6 +1,6 @@
 import { ReactRenderer } from '@tiptap/react';
 import tippy from 'tippy.js';
-import React, { forwardRef, useImperativeHandle, useState, useEffect } from 'react';
+import { forwardRef, useImperativeHandle, useState, useEffect } from 'react';
 import { FileText } from 'lucide-react';
 import type { Note } from '../../lib/vault';
 

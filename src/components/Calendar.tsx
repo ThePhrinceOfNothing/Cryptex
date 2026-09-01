@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useVault } from '../context/VaultContext';
-import { Calendar as CalendarIcon, Plus, ChevronLeft, ChevronRight, List, LayoutGrid, Clock, AlertCircle, X, Trash2, Tag, BellRing } from 'lucide-react';
+import { Calendar as CalendarIcon, Plus, ChevronLeft, ChevronRight, List, LayoutGrid, Clock, X, Trash2, BellRing } from 'lucide-react';
 import type { CalendarEvent, Task } from '../lib/vault';
 import { ConfirmModal } from './ConfirmModal';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -342,7 +342,7 @@ const EventModal: React.FC<{ isOpen: boolean, onClose: () => void, initialDate: 
   const [time, setTime] = useState(ev?.time || '');
   const [desc, setDesc] = useState(ev?.description || '');
   const [color, setColor] = useState<CalendarEvent['color']>(ev?.color || 'blue');
-  const [recurring, setRecurring] = useState<CalendarEvent['recurring']>(ev?.recurring || 'none');
+  const [recurring] = useState<CalendarEvent['recurring']>(ev?.recurring || 'none');
 
   const handleSave = () => {
     if (!title.trim()) return;

@@ -1,6 +1,6 @@
-import React, { useState, useMemo, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useVault } from '../context/VaultContext';
-import { Search, Plus, FileText, Folder, FolderOpen, Trash2, ChevronRight, ChevronDown, Download, Link as LinkIcon, MoreVertical, Check } from 'lucide-react';
+import { Search, Plus, FileText, Folder, FolderOpen, Trash2, ChevronRight, ChevronDown, Download, Link as Check } from 'lucide-react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';

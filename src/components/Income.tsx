@@ -1,10 +1,10 @@
 import React, { useState, useMemo } from 'react';
 import { useVault } from '../context/VaultContext';
-import { Plus, Download, Trash2, Edit3, PieChart, TrendingUp, DollarSign, Wallet, Tag, Repeat, ListPlus, X, Calendar as CalIcon } from 'lucide-react';
+import { Plus, Download, Trash2, Edit3, PieChart, TrendingUp, DollarSign, Tag, Repeat, ListPlus, X, Calendar as CalIcon } from 'lucide-react';
 import type { Transaction, TransactionSplit } from '../lib/vault';
 import { ConfirmModal } from './ConfirmModal';
 import { motion, AnimatePresence } from 'framer-motion';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart as RePieChart, Pie, Cell, Legend } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart as RePieChart, Pie, Cell,} from 'recharts';
 
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316'];
 
@@ -180,7 +180,7 @@ export const Income: React.FC = () => {
                       dataKey="value"
                       stroke="none"
                     >
-                      {pieData.map((entry, index) => (
+                      {pieData.map((index) => (
                         <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                       ))}
                     </Pie>
@@ -310,14 +310,14 @@ export const Income: React.FC = () => {
 };
 
 // --- Transaction Modal Subcomponent ---
-const TransactionModal: React.FC<{ isOpen: boolean, onClose: () => void, tx: Transaction | null, curr: string, onSave: (t: Transaction) => void }> = ({ isOpen, onClose, tx, curr, onSave }) => {
+const TransactionModal: React.FC<{ isOpen: boolean, onClose: () => void, tx: Transaction | null, curr: string, onSave: (t: Transaction) => void }> = ({ onClose, tx, curr, onSave }) => {
   const [type, setType] = useState<'in'|'out'>(tx?.type || 'out');
   const [amount, setAmount] = useState(tx?.amount.toString() || '');
   const [desc, setDesc] = useState(tx?.description || '');
   const [date, setDate] = useState(tx?.date.split('T')[0] || new Date().toISOString().split('T')[0]);
   const [category, setCategory] = useState(tx?.category || 'Groceries');
   const [recurring, setRecurring] = useState<'none'|'daily'|'weekly'|'monthly'|'yearly'>(tx?.recurring || 'none');
-  const [memo, setMemo] = useState(tx?.memo || '');
+  const [memo] = useState(tx?.memo || '');
 
   // Split Receipts
   const [isSplit, setIsSplit] = useState(tx && tx.splits && tx.splits.length > 0 ? true : false);

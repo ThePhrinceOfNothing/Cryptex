@@ -1,6 +1,6 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { useVault } from '../context/VaultContext';
-import { Shield, ShieldAlert, ShieldCheck, Activity, Plus, Clock, FileText, CheckCircle, TrendingUp, Key, ChevronRight } from 'lucide-react';
+import { Shield, ShieldAlert, ShieldCheck, Activity, Clock, FileText, CheckCircle, TrendingUp, Key, ChevronRight } from 'lucide-react';
 import { calculatePasswordStrength } from '../lib/passwordUtils';
 import { motion } from 'framer-motion';
 

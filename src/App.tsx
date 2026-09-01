@@ -13,7 +13,7 @@ const LazyCalendar = React.lazy(() => import('./components/Calendar').then(m => 
 const LazySettings = React.lazy(() => import('./components/Settings').then(m => ({ default: m.Settings })));
 const LazyOnboardingTour = React.lazy(() => import('./components/OnboardingTour').then(m => ({ default: m.OnboardingTour })));
 import { motion, AnimatePresence } from 'framer-motion';
-import { pageFadeIn } from './lib/AnimationUtils';
+
 import { getCurrentWindow } from '@tauri-apps/api/window';
 
 function AppContent() {

@@ -3,7 +3,7 @@ import Suggestion from '@tiptap/suggestion';
 import tippy from 'tippy.js';
 import { ReactRenderer } from '@tiptap/react';
 import React, { forwardRef, useImperativeHandle, useState, useEffect } from 'react';
-import { Heading1, Heading2, Heading3, List, ListOrdered, Quote, CodeSquare, CheckSquare } from 'lucide-react';
+import { Heading1, Heading2, Heading3, List, ListOrdered, Quote, CodeSquare,  } from 'lucide-react';
 
 interface CommandItemProps {
   title: string;
