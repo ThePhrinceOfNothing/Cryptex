@@ -9,7 +9,7 @@ export const UpdateLogsModal: React.FC = () => {
   const { vaultData, updateVaultData } = useVault();
   const [isOpen, setIsOpen] = useState(false);
   const [currentVersion, setCurrentVersion] = useState<string | null>(null);
-  const [hasScrolledToBottom, setHasScrolledToBottom] = useState(false);
+  const [hasScrolledToBottom, setHasScrolledToBottom] = useState(true);
   const [markdownLogs, setMarkdownLogs] = useState<string | null>(null);
   const [isLoadingLogs, setIsLoadingLogs] = useState(false);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -152,7 +152,7 @@ export const UpdateLogsModal: React.FC = () => {
                     <ChevronDown size={14} className="text-accent" />
                   </motion.div>
                 )}
-                {hasScrolledToBottom ? 'You may now close this window.' : 'Please scroll to the bottom to continue.'}
+                'Welcome to the new update.'
               </div>
               <button
                 onClick={handleClose}
@@ -172,4 +172,6 @@ export const UpdateLogsModal: React.FC = () => {
     </AnimatePresence>
   );
 };
+
+
 
