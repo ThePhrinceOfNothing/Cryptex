@@ -1,17 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { VaultProvider, useVault } from './context/VaultContext';
-import { LockScreen } from './components/LockScreen';
-const LazyDashboard = React.lazy(() => import('./components/Dashboard').then(m => ({ default: m.Dashboard })));
-const LazyAppLayout = React.lazy(() => import('./components/AppLayout').then(m => ({ default: m.AppLayout })));
-const LazyMyVaultList = React.lazy(() => import('./components/MyVault').then(m => ({ default: m.MyVaultList })));
-const LazyMyVaultDetails = React.lazy(() => import('./components/MyVault').then(m => ({ default: m.MyVaultDetails })));
-const LazyNotesList = React.lazy(() => import('./components/Notes').then(m => ({ default: m.NotesList })));
-const LazyNotesEditor = React.lazy(() => import('./components/Notes').then(m => ({ default: m.NotesEditor })));
-const LazyTasks = React.lazy(() => import('./components/Tasks').then(m => ({ default: m.Tasks })));
-const LazyIncome = React.lazy(() => import('./components/Income').then(m => ({ default: m.Income })));
-const LazyCalendar = React.lazy(() => import('./components/Calendar').then(m => ({ default: m.Calendar })));
-const LazySettings = React.lazy(() => import('./components/Settings').then(m => ({ default: m.Settings })));
-const LazyOnboardingTour = React.lazy(() => import('./components/OnboardingTour').then(m => ({ default: m.OnboardingTour })));
+import { LockScreen } from './components/ui/LockScreen';
+const LazyDashboard = React.lazy(() => import('./components/modules/Dashboard').then(m => ({ default: m.Dashboard })));
+const LazyAppLayout = React.lazy(() => import('./components/layout/AppLayout').then(m => ({ default: m.AppLayout })));
+const LazyMyVaultList = React.lazy(() => import('./components/modules/MyVault').then(m => ({ default: m.MyVaultList })));
+const LazyMyVaultDetails = React.lazy(() => import('./components/modules/MyVault').then(m => ({ default: m.MyVaultDetails })));
+const LazyNotesList = React.lazy(() => import('./components/modules/Notes').then(m => ({ default: m.NotesList })));
+const LazyNotesEditor = React.lazy(() => import('./components/modules/Notes').then(m => ({ default: m.NotesEditor })));
+const LazyTasks = React.lazy(() => import('./components/modules/Tasks').then(m => ({ default: m.Tasks })));
+const LazyIncome = React.lazy(() => import('./components/modules/Income').then(m => ({ default: m.Income })));
+const LazyCalendar = React.lazy(() => import('./components/modules/Calendar').then(m => ({ default: m.Calendar })));
+const LazySettings = React.lazy(() => import('./components/modules/Settings').then(m => ({ default: m.Settings })));
+const LazyOnboardingTour = React.lazy(() => import('./components/ui/OnboardingTour').then(m => ({ default: m.OnboardingTour })));
 import { motion, AnimatePresence } from 'framer-motion';
 
 import { getCurrentWindow } from '@tauri-apps/api/window';
@@ -194,4 +194,5 @@ function App() {
 }
 
 export default App;
+
 

@@ -20,6 +20,7 @@ export interface VaultSettings {
   hasSeenTour?: boolean;
   theme?: 'light' | 'dark';
   accentColor?: string;
+  ghostBehavior?: 'random' | 'fixed' | 'draggable';
   lastSeenVersion?: string;
 }
 
@@ -211,4 +212,5 @@ export async function loadVault(password: string): Promise<{ data: VaultData, ke
   const data = await loadVaultWithKey(key, payload);
   return { data, key, salt };
 }
+
 
