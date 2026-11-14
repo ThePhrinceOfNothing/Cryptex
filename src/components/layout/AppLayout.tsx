@@ -60,6 +60,18 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
     return () => window.removeEventListener('resize', handleResize);
   }, [isMobileDrawerOpen]);
 
+  useEffect(() => {
+    const handleGlobalShortcuts = (e: KeyboardEvent) => {
+      // Global Quick-Lock: Ctrl+Shift+L or Ctrl+Alt+L
+      if ((e.ctrlKey || e.metaKey) && (e.shiftKey || e.altKey) && (e.key === 'l' || e.key === 'L')) {
+        e.preventDefault();
+        handleLockRequest();
+      }
+    };
+    window.addEventListener('keydown', handleGlobalShortcuts);
+    return () => window.removeEventListener('keydown', handleGlobalShortcuts);
+  }, []);
+
   const isMobile = windowWidth < 768;
   const isTablet = windowWidth >= 768 && windowWidth < 1024;
 

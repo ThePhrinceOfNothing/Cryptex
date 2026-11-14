@@ -1,8 +1,29 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { useVault } from '../../context/VaultContext';
-import { Search, Plus, Key, Copy, Check, Eye, EyeOff, Trash2, ShieldCheck, Globe, User as UserIcon, Link2, ShieldAlert, PlusCircle } from 'lucide-react';
+import { useToast } from '../../context/ToastContext';
+import { 
+  Search, 
+  Plus, 
+  Key, 
+  Copy, 
+  Check, 
+  Eye, 
+  EyeOff, 
+  Trash2, 
+  ShieldCheck, 
+  Globe, 
+  User as UserIcon, 
+  Link2, 
+  ShieldAlert, 
+  PlusCircle, 
+  Upload, 
+  Shield, 
+  AlertTriangle,
+  RotateCcw,
+  Sparkles
+} from 'lucide-react';
 import { writeText } from '@tauri-apps/plugin-clipboard-manager';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { EmptyState } from '../ui/EmptyState';
 import { ConfirmModal } from '../modals/ConfirmModal';
 import { PasswordGeneratorModal } from '../modals/PasswordGeneratorModal';
@@ -20,6 +41,45 @@ const getFaviconUrl = (url: string) => {
   }
 };
 
+// Robust CSV Parser respecting quotes
+function parseCsv(text: string): Array<Record<string, string>> {
+  const lines = text.split(/\r?\n/).filter(line => line.trim().length > 0);
+  if (lines.length < 2) return [];
+
+  const parseLine = (line: string): string[] => {
+    const result: string[] = [];
+    let current = '';
+    let inQuotes = false;
+    for (let i = 0; i < line.length; i++) {
+      const char = line[i];
+      if (char === '"') {
+        inQuotes = !inQuotes;
+      } else if (char === ',' && !inQuotes) {
+        result.push(current.trim());
+        current = '';
+      } else {
+        current += char;
+      }
+    }
+    result.push(current.trim());
+    return result;
+  };
+
+  const headers = parseLine(lines[0]).map(h => h.toLowerCase().replace(/[\s_"-]+/g, ''));
+  const rows: Array<Record<string, string>> = [];
+
+  for (let i = 1; i < lines.length; i++) {
+    const values = parseLine(lines[i]);
+    if (values.length === 0 || values.every(v => !v)) continue;
+    const row: Record<string, string> = {};
+    headers.forEach((h, idx) => {
+      row[h] = values[idx] || '';
+    });
+    rows.push(row);
+  }
+  return rows;
+}
+
 // ---- MyVaultList (Middle Pane) ----
 
 interface MyVaultListProps {
@@ -29,39 +89,208 @@ interface MyVaultListProps {
 }
 
 export const MyVaultList: React.FC<MyVaultListProps> = ({ selectedId, onSelect, onCreateNew }) => {
-  const { vaultData } = useVault();
+  const { vaultData, updateVaultData } = useVault();
+  const { showToast } = useToast();
   const [searchQuery, setSearchQuery] = useState('');
-  
+  const [activeTab, setActiveTab] = useState<'all' | 'audit'>('all');
+  const [auditFilter, setAuditFilter] = useState<'all' | 'reused' | 'weak' | 'no2fa'>('all');
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   const credentials = vaultData?.credentials || [];
-  
+
+  // Health Audit Analysis
+  const audit = useMemo(() => {
+    const passwordCounts: Record<string, number> = {};
+    credentials.forEach(c => {
+      if (c.password) {
+        passwordCounts[c.password] = (passwordCounts[c.password] || 0) + 1;
+      }
+    });
+
+    const reused = credentials.filter(c => c.password && passwordCounts[c.password] > 1);
+    const weak = credentials.filter(c => !c.password || c.password.length < 10 || /^[a-zA-Z]+$/.test(c.password));
+    const missing2FA = credentials.filter(c => c.url && !c.totpSecret);
+
+    let score = 100;
+    if (credentials.length > 0) {
+      const reusedPenalty = (reused.length / credentials.length) * 45;
+      const weakPenalty = (weak.length / credentials.length) * 35;
+      const missing2FAPenalty = (missing2FA.length / credentials.length) * 20;
+      score = Math.max(0, Math.round(100 - reusedPenalty - weakPenalty - missing2FAPenalty));
+    }
+
+    return { reused, weak, missing2FA, score, passwordCounts };
+  }, [credentials]);
+
+  // Handle CSV Import
+  const handleCsvFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      const text = await file.text();
+      const rows = parseCsv(text);
+      if (rows.length === 0) {
+        showToast('No valid accounts found in CSV file.', { type: 'error' });
+        return;
+      }
+
+      const imported: any[] = [];
+      for (const row of rows) {
+        const title = row['name'] || row['title'] || row['servicename'] || row['service'] || row['domain'] || 'Imported Account';
+        const url = row['url'] || row['loginuri'] || row['website'] || '';
+        const username = row['username'] || row['loginusername'] || row['user'] || row['email'] || '';
+        const password = row['password'] || row['loginpassword'] || row['pass'] || '';
+        const totpSecret = row['totp'] || row['logintotp'] || row['otpauth'] || '';
+
+        if (title || username || password) {
+          imported.push({
+            id: crypto.randomUUID(),
+            title,
+            url,
+            username,
+            password,
+            totpSecret,
+            customFields: []
+          });
+        }
+      }
+
+      if (imported.length > 0) {
+        await updateVaultData({ credentials: [...credentials, ...imported] });
+        showToast(`Successfully imported ${imported.length} accounts!`, { type: 'success' });
+      } else {
+        showToast('Could not map any credentials from CSV.', { type: 'warning' });
+      }
+    } catch (err) {
+      console.error('Failed to parse CSV:', err);
+      showToast('Failed to parse CSV file. Ensure it is a valid format.', { type: 'error' });
+    } finally {
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
   const filteredCredentials = useMemo(() => {
-    if (!searchQuery.trim()) return credentials;
+    let list = credentials;
+
+    if (activeTab === 'audit') {
+      if (auditFilter === 'reused') list = audit.reused;
+      else if (auditFilter === 'weak') list = audit.weak;
+      else if (auditFilter === 'no2fa') list = audit.missing2FA;
+      else {
+        // Union of all issues
+        const issueIds = new Set([
+          ...audit.reused.map(c => c.id),
+          ...audit.weak.map(c => c.id),
+          ...audit.missing2FA.map(c => c.id)
+        ]);
+        list = credentials.filter(c => issueIds.has(c.id));
+      }
+    }
+
+    if (!searchQuery.trim()) return list;
     const query = searchQuery.toLowerCase();
-    return credentials.filter(c => 
+    return list.filter(c => 
       c.title.toLowerCase().includes(query) || 
       c.username.toLowerCase().includes(query)
     );
-  }, [credentials, searchQuery]);
+  }, [credentials, searchQuery, activeTab, auditFilter, audit]);
 
   return (
     <div className="flex flex-col h-full bg-white dark:bg-[#111113]">
+      <input 
+        type="file" 
+        accept=".csv,text/csv" 
+        ref={fileInputRef} 
+        onChange={handleCsvFileChange} 
+        className="hidden" 
+      />
+
+      {/* Header with Title and Actions */}
       <div className="h-14 flex items-center justify-between px-4 sm:px-5 border-b border-gray-200 dark:border-[#262626] shrink-0">
-        <h2 className="font-semibold text-xs text-gray-900 dark:text-zinc-100 uppercase tracking-wider">Passwords</h2>
-        <button 
-          onClick={onCreateNew}
-          className="w-7 h-7 flex items-center justify-center bg-white dark:bg-[#141416] border border-gray-200 dark:border-[#262626] hover:bg-gray-50 dark:hover:bg-zinc-800 rounded-md text-gray-700 dark:text-zinc-300 transition-colors shadow-2xs active:scale-[0.95]"
-          title="Add new credential"
+        <h2 className="font-semibold text-xs text-gray-900 dark:text-zinc-100 uppercase tracking-wider">
+          Passwords
+        </h2>
+        <div className="flex items-center gap-1.5">
+          <button 
+            onClick={() => fileInputRef.current?.click()}
+            className="w-7 h-7 flex items-center justify-center bg-white dark:bg-[#141416] border border-gray-200 dark:border-[#262626] hover:bg-gray-50 dark:hover:bg-zinc-800 rounded-md text-gray-600 dark:text-zinc-400 hover:text-gray-900 dark:hover:text-zinc-100 transition-colors shadow-2xs active:scale-[0.95]"
+            title="Import passwords from CSV (Chrome, Bitwarden, 1Password)"
+          >
+            <Upload size={13} strokeWidth={1.75} />
+          </button>
+          <button 
+            onClick={onCreateNew}
+            className="w-7 h-7 flex items-center justify-center bg-white dark:bg-[#141416] border border-gray-200 dark:border-[#262626] hover:bg-gray-50 dark:hover:bg-zinc-800 rounded-md text-gray-700 dark:text-zinc-300 transition-colors shadow-2xs active:scale-[0.95]"
+            title="Add new credential"
+          >
+            <Plus size={15} strokeWidth={1.75} />
+          </button>
+        </div>
+      </div>
+
+      {/* Mode Tabs: All Accounts vs Health Audit */}
+      <div className="flex items-center border-b border-gray-200 dark:border-[#262626] bg-gray-50/50 dark:bg-[#0e0e10] p-1.5 gap-1 shrink-0">
+        <button
+          onClick={() => setActiveTab('all')}
+          className={`flex-1 py-1 px-2.5 rounded-md text-xs font-medium transition-colors ${
+            activeTab === 'all'
+              ? 'bg-white dark:bg-[#141416] text-gray-900 dark:text-zinc-100 shadow-2xs border border-gray-200 dark:border-[#262626]'
+              : 'text-gray-500 dark:text-zinc-400 hover:text-gray-900 dark:hover:text-zinc-200'
+          }`}
         >
-          <Plus size={15} strokeWidth={1.75} />
+          All ({credentials.length})
+        </button>
+        <button
+          onClick={() => setActiveTab('audit')}
+          className={`flex-1 py-1 px-2.5 rounded-md text-xs font-medium transition-colors flex items-center justify-center gap-1.5 ${
+            activeTab === 'audit'
+              ? 'bg-white dark:bg-[#141416] text-gray-900 dark:text-zinc-100 shadow-2xs border border-gray-200 dark:border-[#262626]'
+              : 'text-gray-500 dark:text-zinc-400 hover:text-gray-900 dark:hover:text-zinc-200'
+          }`}
+        >
+          <Shield size={12} strokeWidth={2} className={audit.score < 80 ? 'text-amber-500' : 'text-emerald-500'} />
+          <span>Health ({audit.score}%)</span>
         </button>
       </div>
+
+      {/* Audit Filter Pills (when audit mode active) */}
+      {activeTab === 'audit' && (
+        <div className="p-2 border-b border-gray-200 dark:border-[#262626] bg-gray-50 dark:bg-[#121214] flex flex-wrap gap-1 text-[11px] shrink-0">
+          <button
+            onClick={() => setAuditFilter('all')}
+            className={`px-2 py-0.5 rounded border transition-colors ${auditFilter === 'all' ? 'bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 border-transparent font-medium' : 'border-gray-200 dark:border-[#262626] text-gray-600 dark:text-zinc-400'}`}
+          >
+            All Issues
+          </button>
+          <button
+            onClick={() => setAuditFilter('reused')}
+            className={`px-2 py-0.5 rounded border transition-colors ${auditFilter === 'reused' ? 'bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 border-transparent font-medium' : 'border-gray-200 dark:border-[#262626] text-gray-600 dark:text-zinc-400'}`}
+          >
+            Reused ({audit.reused.length})
+          </button>
+          <button
+            onClick={() => setAuditFilter('weak')}
+            className={`px-2 py-0.5 rounded border transition-colors ${auditFilter === 'weak' ? 'bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 border-transparent font-medium' : 'border-gray-200 dark:border-[#262626] text-gray-600 dark:text-zinc-400'}`}
+          >
+            Weak ({audit.weak.length})
+          </button>
+          <button
+            onClick={() => setAuditFilter('no2fa')}
+            className={`px-2 py-0.5 rounded border transition-colors ${auditFilter === 'no2fa' ? 'bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 border-transparent font-medium' : 'border-gray-200 dark:border-[#262626] text-gray-600 dark:text-zinc-400'}`}
+          >
+            No 2FA ({audit.missing2FA.length})
+          </button>
+        </div>
+      )}
       
+      {/* Search Input */}
       <div className="p-3 border-b border-gray-200 dark:border-[#262626] shrink-0">
         <div className="relative">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 dark:text-zinc-500 w-3.5 h-3.5" strokeWidth={1.75} />
           <input 
             type="text" 
-            placeholder="Search accounts..." 
+            placeholder={activeTab === 'audit' ? "Filter security issues..." : "Search accounts..."} 
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full pl-8 pr-3 py-1.5 bg-gray-50 dark:bg-[#141416] border border-gray-200 dark:border-[#262626] rounded-md text-xs text-gray-900 dark:text-zinc-100 focus:outline-none focus:border-zinc-400 dark:focus:border-zinc-600 transition-colors"
@@ -69,48 +298,69 @@ export const MyVaultList: React.FC<MyVaultListProps> = ({ selectedId, onSelect, 
         </div>
       </div>
 
+      {/* Account List */}
       <div className="flex-1 overflow-y-auto p-2 space-y-1">
         {filteredCredentials.length === 0 ? (
-          <p className="text-gray-400 dark:text-zinc-600 text-xs text-center py-8 font-normal">No accounts found.</p>
+          <div className="text-center py-8 px-4">
+            <p className="text-gray-400 dark:text-zinc-600 text-xs font-normal">
+              {activeTab === 'audit' 
+                ? 'No password security vulnerabilities found!' 
+                : 'No accounts found.'}
+            </p>
+          </div>
         ) : (
-          filteredCredentials.map(cred => (
-            <button
-              key={cred.id}
-              onClick={() => onSelect(cred.id)}
-              className={`w-full text-left p-2.5 rounded-lg border flex items-center gap-2.5 transition-colors active:scale-[0.98] ${
-                selectedId === cred.id 
-                  ? 'bg-zinc-100 dark:bg-white/10 border-gray-300 dark:border-white/20 shadow-2xs' 
-                  : 'bg-white dark:bg-[#111113] border-transparent hover:bg-gray-50 dark:hover:bg-zinc-800/50'
-              }`}
-            >
-              <div className={`relative w-7 h-7 rounded-full flex items-center justify-center shrink-0 border overflow-hidden ${
-                selectedId === cred.id ? 'bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 border-transparent' : 'bg-gray-100 dark:bg-zinc-800 text-gray-500 dark:text-zinc-400 border-gray-200 dark:border-[#262626]'
-              }`}>
-                {cred.url && getFaviconUrl(cred.url) ? (
-                  <>
-                    <img 
-                      src={getFaviconUrl(cred.url)!} 
-                      alt="" 
-                      className="w-full h-full object-cover bg-white" 
-                      onError={(e) => { 
-                        e.currentTarget.style.display = 'none'; 
-                        (e.currentTarget.nextElementSibling as HTMLElement).style.display = 'block'; 
-                      }} 
-                    />
-                    <Key size={13} strokeWidth={1.75} className="hidden" />
-                  </>
-                ) : (
-                  <Key size={13} strokeWidth={1.75} />
-                )}
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className={`font-medium text-xs truncate ${selectedId === cred.id ? 'text-gray-900 dark:text-white' : 'text-gray-900 dark:text-zinc-100'}`}>
-                  {cred.title}
-                </p>
-                <p className="text-[11px] text-gray-500 dark:text-zinc-500 truncate">{cred.username}</p>
-              </div>
-            </button>
-          ))
+          filteredCredentials.map(cred => {
+            const isReused = cred.password && (audit.passwordCounts[cred.password] || 0) > 1;
+            const isWeak = !cred.password || cred.password.length < 10;
+            const isNo2fa = cred.url && !cred.totpSecret;
+
+            return (
+              <button
+                key={cred.id}
+                onClick={() => onSelect(cred.id)}
+                className={`w-full text-left p-2.5 rounded-lg border flex items-center gap-2.5 transition-colors active:scale-[0.98] ${
+                  selectedId === cred.id 
+                    ? 'bg-zinc-100 dark:bg-white/10 border-gray-300 dark:border-white/20 shadow-2xs' 
+                    : 'bg-white dark:bg-[#111113] border-transparent hover:bg-gray-50 dark:hover:bg-zinc-800/50'
+                }`}
+              >
+                <div className={`relative w-7 h-7 rounded-full flex items-center justify-center shrink-0 border overflow-hidden ${
+                  selectedId === cred.id ? 'bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 border-transparent' : 'bg-gray-100 dark:bg-zinc-800 text-gray-500 dark:text-zinc-400 border-gray-200 dark:border-[#262626]'
+                }`}>
+                  {cred.url && getFaviconUrl(cred.url) ? (
+                    <>
+                      <img 
+                        src={getFaviconUrl(cred.url)!} 
+                        alt="" 
+                        className="w-full h-full object-cover bg-white" 
+                        onError={(e) => { 
+                          e.currentTarget.style.display = 'none'; 
+                          (e.currentTarget.nextElementSibling as HTMLElement).style.display = 'block'; 
+                        }} 
+                      />
+                      <Key size={13} strokeWidth={1.75} className="hidden" />
+                    </>
+                  ) : (
+                    <Key size={13} strokeWidth={1.75} />
+                  )}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center justify-between gap-1">
+                    <p className={`font-medium text-xs truncate ${selectedId === cred.id ? 'text-gray-900 dark:text-white' : 'text-gray-900 dark:text-zinc-100'}`}>
+                      {cred.title}
+                    </p>
+                    {activeTab === 'audit' && (
+                      <span className="flex items-center gap-1 text-[10px] shrink-0">
+                        {isReused && <span className="text-amber-500 font-medium">Reused</span>}
+                        {isWeak && <span className="text-red-500 font-medium">Weak</span>}
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-[11px] text-gray-500 dark:text-zinc-500 truncate">{cred.username}</p>
+                </div>
+              </button>
+            );
+          })
         )}
       </div>
     </div>
@@ -133,6 +383,7 @@ export const MyVaultDetails: React.FC<MyVaultDetailsProps> = ({
   onDeleteComplete 
 }) => {
   const { vaultData, updateVaultData } = useVault();
+  const { showToast } = useToast();
   const credentials = vaultData?.credentials || [];
   const selectedCred = credentials.find(c => c.id === selectedId);
 
@@ -146,9 +397,12 @@ export const MyVaultDetails: React.FC<MyVaultDetailsProps> = ({
   
   const [showPassword, setShowPassword] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [copiedTotp, setCopiedTotp] = useState(false);
+  const [clipboardSecondsRemaining, setClipboardSecondsRemaining] = useState<number | null>(null);
   const [isGeneratorOpen, setIsGeneratorOpen] = useState(false);
-  
-  React.useEffect(() => {
+  const clipboardTimerRef = useRef<any>(null);
+
+  useEffect(() => {
     if (isCreating) {
       setTitle('');
       setUsername('');
@@ -170,9 +424,23 @@ export const MyVaultDetails: React.FC<MyVaultDetailsProps> = ({
     }
   }, [selectedId, isCreating, selectedCred]);
 
+  // Clipboard countdown interval
+  useEffect(() => {
+    if (clipboardSecondsRemaining === null) return;
+    if (clipboardSecondsRemaining <= 0) {
+      setClipboardSecondsRemaining(null);
+      writeText("").catch(() => {});
+      return;
+    }
+    const timer = setTimeout(() => {
+      setClipboardSecondsRemaining(prev => (prev !== null ? prev - 1 : null));
+    }, 1000);
+    return () => clearTimeout(timer);
+  }, [clipboardSecondsRemaining]);
+
   const [totpData, setTotpData] = useState<{ token: string, secondsRemaining: number } | null>(null);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (!totpSecret) {
       setTotpData(null);
       return;
@@ -185,22 +453,62 @@ export const MyVaultDetails: React.FC<MyVaultDetailsProps> = ({
     return () => clearInterval(interval);
   }, [totpSecret]);
 
-  const handleCopy = async () => {
+  const handleCopyPassword = async () => {
     try {
       await writeText(password);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
-      
-      setTimeout(async () => {
-        try {
-          await writeText("");
-        } catch (e) {
-          console.error("Failed to clear clipboard");
+      setClipboardSecondsRemaining(30);
+
+      showToast('Password copied • Clipboard clearing in 30s', {
+        type: 'info',
+        duration: 30000,
+        countdown: 30,
+        action: {
+          label: 'Clear Now',
+          onClick: async () => {
+            await writeText('');
+            setClipboardSecondsRemaining(null);
+            showToast('Clipboard cleared.', { type: 'success', duration: 2000 });
+          }
         }
-      }, 30000);
+      });
     } catch (err) {
-      console.error("Failed to copy", err);
+      console.error("Failed to copy password", err);
+      showToast('Failed to copy password to clipboard.', { type: 'error' });
     }
+  };
+
+  const handleCopyTotp = async () => {
+    if (!totpData) return;
+    try {
+      await writeText(totpData.token);
+      setCopiedTotp(true);
+      setTimeout(() => setCopiedTotp(false), 2000);
+      setClipboardSecondsRemaining(30);
+
+      showToast(`TOTP code ${totpData.token} copied • Auto-clearing in 30s`, {
+        type: 'info',
+        duration: 30000,
+        countdown: 30,
+        action: {
+          label: 'Clear Now',
+          onClick: async () => {
+            await writeText('');
+            setClipboardSecondsRemaining(null);
+            showToast('Clipboard cleared.', { type: 'success', duration: 2000 });
+          }
+        }
+      });
+    } catch (err) {
+      console.error("Failed to copy TOTP", err);
+    }
+  };
+
+  const handleClearClipboardManual = async () => {
+    await writeText("");
+    setClipboardSecondsRemaining(null);
+    showToast('Clipboard cleared from system memory.', { type: 'success', duration: 2000 });
   };
 
   const handleSave = async () => {
@@ -210,6 +518,7 @@ export const MyVaultDetails: React.FC<MyVaultDetailsProps> = ({
       const newId = crypto.randomUUID();
       const newCred = { id: newId, title, username, password, url, totpSecret, customFields, folderId };
       await updateVaultData({ credentials: [...credentials, newCred] });
+      showToast(`Account "${title}" saved.`, { type: 'success' });
       onSaveComplete(newId);
     } else if (selectedId) {
       const updated = credentials.map(c => 
@@ -218,6 +527,7 @@ export const MyVaultDetails: React.FC<MyVaultDetailsProps> = ({
           : c
       );
       await updateVaultData({ credentials: updated });
+      showToast(`Account "${title}" updated.`, { type: 'success' });
       onSaveComplete(selectedId);
     }
   };
@@ -228,6 +538,7 @@ export const MyVaultDetails: React.FC<MyVaultDetailsProps> = ({
     if (!selectedId) return;
     const updated = credentials.filter(c => c.id !== selectedId);
     await updateVaultData({ credentials: updated });
+    showToast(`Account "${selectedCred?.title}" deleted.`, { type: 'info' });
     onDeleteComplete();
   };
 
@@ -289,9 +600,25 @@ export const MyVaultDetails: React.FC<MyVaultDetailsProps> = ({
           )}
         </div>
 
+        {/* Clipboard Active Countdown Notification Banner */}
+        {clipboardSecondsRemaining !== null && (
+          <div className="mb-4 p-3 bg-blue-50/80 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900/50 rounded-lg flex items-center justify-between text-xs text-blue-900 dark:text-blue-200">
+            <span className="flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
+              <span>Clipboard contains sensitive password. Auto-wiping in <strong className="tabular-nums font-semibold">{clipboardSecondsRemaining}s</strong></span>
+            </span>
+            <button
+              onClick={handleClearClipboardManual}
+              className="px-2.5 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded font-medium text-[11px] transition-colors"
+            >
+              Wipe Now
+            </button>
+          </div>
+        )}
+
         <div className="bg-white dark:bg-[#141416] border border-gray-200 dark:border-[#262626] rounded-xl p-4 sm:p-6 shadow-2xs space-y-4">
           
-          {/* Title & URL Row (Responsive Stack on Mobile) */}
+          {/* Title & URL Row */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-[11px] font-semibold text-gray-700 dark:text-zinc-300 uppercase tracking-wider mb-1.5">Service Name</label>
@@ -380,7 +707,11 @@ export const MyVaultDetails: React.FC<MyVaultDetailsProps> = ({
                 className="flex-1 px-3 py-2 bg-gray-50 dark:bg-[#111113] border border-gray-200 dark:border-[#262626] rounded-md text-xs text-gray-900 dark:text-zinc-100 focus:outline-none focus:border-zinc-400 dark:focus:border-zinc-500 transition-colors font-mono"
               />
               {totpData && (
-                <div className="flex items-center justify-between gap-3 bg-gray-50 dark:bg-[#111113] border border-gray-200 dark:border-[#262626] rounded-md px-3 py-1.5 shrink-0">
+                <div 
+                  onClick={handleCopyTotp}
+                  className="flex items-center justify-between gap-3 bg-gray-50 dark:bg-[#111113] border border-gray-200 dark:border-[#262626] rounded-md px-3 py-1.5 shrink-0 cursor-pointer hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors"
+                  title="Click to copy TOTP token"
+                >
                   <span className="font-mono font-bold tracking-wider text-sm tabular-nums text-gray-900 dark:text-white">
                     {totpData.token.slice(0, 3)} {totpData.token.slice(3)}
                   </span>
@@ -404,6 +735,7 @@ export const MyVaultDetails: React.FC<MyVaultDetailsProps> = ({
                       />
                     </svg>
                   </div>
+                  {copiedTotp ? <Check size={13} className="text-emerald-500" /> : <Copy size={13} className="text-gray-400" />}
                 </div>
               )}
             </div>
@@ -480,7 +812,7 @@ export const MyVaultDetails: React.FC<MyVaultDetailsProps> = ({
         <div className="mt-6 flex flex-col-reverse sm:flex-row justify-end gap-2.5">
           {!isCreating && (
             <button
-              onClick={handleCopy}
+              onClick={handleCopyPassword}
               className="px-4 py-2 bg-white dark:bg-[#141416] border border-gray-200 dark:border-[#262626] hover:bg-gray-50 dark:hover:bg-zinc-800 text-gray-800 dark:text-zinc-200 text-xs font-medium rounded-md shadow-2xs transition-colors flex items-center justify-center gap-2 active:scale-[0.97]"
             >
               {copied ? <Check className="w-3.5 h-3.5 text-emerald-500" strokeWidth={1.75} /> : <Copy className="w-3.5 h-3.5 text-gray-400" strokeWidth={1.75} />}

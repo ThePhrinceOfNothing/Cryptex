@@ -14,7 +14,7 @@ export const getTOTP = (secret: string): TOTPInfo | null => {
     const cleanSecret = secret.replace(/\s+/g, '').toUpperCase();
     
     const totp = new OTPAuth.TOTP({
-      issuer: 'Cryptex Vault',
+      issuer: 'Tectoryx Vault',
       label: 'Account',
       algorithm: 'SHA1',
       digits: 6,

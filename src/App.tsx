@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { VaultProvider, useVault } from './context/VaultContext';
+import { ToastProvider } from './context/ToastContext';
 import { LockScreen } from './components/ui/LockScreen';
 const LazyDashboard = React.lazy(() => import('./components/modules/Dashboard').then(m => ({ default: m.Dashboard })));
 const LazyAppLayout = React.lazy(() => import('./components/layout/AppLayout').then(m => ({ default: m.AppLayout })));
@@ -196,7 +197,9 @@ function AppContent() {
 function App() {
   return (
     <VaultProvider>
-      <AppContent />
+      <ToastProvider>
+        <AppContent />
+      </ToastProvider>
     </VaultProvider>
   );
 }

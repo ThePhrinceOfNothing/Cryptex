@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useVault } from '../../context/VaultContext';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import type { DropResult } from '@hello-pangea/dnd';
-import { Plus, Clock, CheckCircle2, X, Trash2, GripVertical, CircleDashed, ListTodo, Play, Pause, RotateCcw, ArrowUpDown } from 'lucide-react';
+import { Plus, Clock, CheckCircle2, Check, X, Trash2, GripVertical, CircleDashed, ListTodo, Play, Pause, RotateCcw, ArrowUpDown } from 'lucide-react';
 import type { Task } from '../../lib/vault';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ConfirmModal } from '../modals/ConfirmModal';
@@ -111,6 +111,19 @@ export const Tasks: React.FC = () => {
   const handleUpdateTask = async (updatedTask: Task) => {
     const updatedTasks = tasks.map(t => t.id === updatedTask.id ? updatedTask : t);
     setEditingTask(updatedTask);
+    await updateVaultData({ tasks: updatedTasks });
+  };
+
+  const handleToggleSubtask = async (taskId: string, subtaskId: string) => {
+    const updatedTasks = tasks.map(t => {
+      if (t.id === taskId && t.subtasks) {
+        const updatedSubtasks = t.subtasks.map(s => 
+          s.id === subtaskId ? { ...s, isCompleted: !s.isCompleted } : s
+        );
+        return { ...t, subtasks: updatedSubtasks };
+      }
+      return t;
+    });
     await updateVaultData({ tasks: updatedTasks });
   };
 
@@ -280,6 +293,42 @@ export const Tasks: React.FC = () => {
                                       <p className="text-[11px] text-gray-500 dark:text-zinc-400 mt-1 line-clamp-2">
                                         {task.description}
                                       </p>
+                                    )}
+
+                                    {task.subtasks && task.subtasks.length > 0 && (
+                                      <div className="mt-2.5 pt-2 border-t border-gray-100 dark:border-[#222] space-y-1">
+                                        {task.subtasks.slice(0, 4).map((st) => (
+                                          <div 
+                                            key={st.id}
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              handleToggleSubtask(task.id, st.id);
+                                            }}
+                                            className="flex items-center gap-2 group/st py-0.5 px-1 rounded hover:bg-gray-100/70 dark:hover:bg-zinc-800/60 cursor-pointer"
+                                            title="Click to toggle"
+                                          >
+                                            <div className={`w-3.5 h-3.5 rounded border flex items-center justify-center shrink-0 transition-colors ${
+                                              st.isCompleted 
+                                                ? 'bg-zinc-900 border-zinc-900 text-white dark:bg-white dark:border-white dark:text-zinc-900' 
+                                                : 'border-gray-300 dark:border-zinc-600 bg-white dark:bg-zinc-800'
+                                            }`}>
+                                              {st.isCompleted && <Check size={10} strokeWidth={2.5} />}
+                                            </div>
+                                            <span className={`text-[11px] leading-tight truncate flex-1 transition-all ${
+                                              st.isCompleted 
+                                                ? 'line-through text-gray-400 dark:text-zinc-600' 
+                                                : 'text-gray-700 dark:text-zinc-300'
+                                            }`}>
+                                              {st.title}
+                                            </span>
+                                          </div>
+                                        ))}
+                                        {task.subtasks.length > 4 && (
+                                          <p className="text-[10px] text-gray-400 dark:text-zinc-500 pl-1 pt-0.5">
+                                            +{task.subtasks.length - 4} more subtasks
+                                          </p>
+                                        )}
+                                      </div>
                                     )}
 
                                     <div className="flex items-center justify-between gap-2 mt-3 pt-2 border-t border-gray-100 dark:border-[#222]">

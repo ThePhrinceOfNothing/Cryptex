@@ -1,8 +1,8 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
-  "productName": "Cryptex",
+  "productName": "Tectoryx",
   "version": "1.4.0",
-  "identifier": "com.cryptex.app",
+  "identifier": "com.tectoryx.app",
   "build": {
     "frontendDist": "../dist",
     "devUrl": "http://localhost:5173",
@@ -12,7 +12,7 @@
   "app": {
     "windows": [
       {
-        "title": "Cryptex",
+        "title": "Tectoryx",
         "width": 1100,
         "height": 700,
         "minWidth": 800,

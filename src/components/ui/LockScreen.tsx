@@ -263,8 +263,8 @@ export const LockScreen: React.FC = () => {
           
           {/* Card Header Branding */}
           <div className="flex items-center gap-2 text-zinc-500 text-[10px] font-bold tracking-widest uppercase mb-8">
-            <Hexagon className="w-3 h-3 text-accent" />
-            <span>Cryptex</span>
+            <img src={logoUrl} alt="Tectoryx" className="w-4 h-4 rounded-xs" />
+            <span>Tectoryx</span>
           </div>
 
           <AnimatePresence mode="wait">
