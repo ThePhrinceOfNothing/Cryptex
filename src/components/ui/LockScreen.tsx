@@ -1,36 +1,32 @@
-import React, { useState, useEffect } from 'react';
-import { vaultExists, loadVault, saveVault } from '../../lib/vault';
-import type { VaultData } from '../../lib/vault';
+import React, { useState, useEffect, useRef } from 'react';
+import { vaultExists, loadVault } from '../../lib/vault';
 import { loadAppConfig, saveAppConfig } from '../../lib/config';
 import type { AppConfig } from '../../lib/config';
 import { useVault } from '../../context/VaultContext';
-import { ShieldAlert, Eye, EyeOff, User, Hexagon } from 'lucide-react';
+import { Eye, EyeOff, Lock, ShieldAlert, ArrowRight, DownloadCloud, User } from 'lucide-react';
 import logoUrl from '../../assets/logo.svg';
-import { motion, AnimatePresence, useAnimation } from 'framer-motion';
-import { WebThreads } from './WebThreads';
+import { motion, useAnimation } from 'framer-motion';
 import { check } from '@tauri-apps/plugin-updater';
 import { getVersion } from '@tauri-apps/api/app';
-import { DownloadCloud } from 'lucide-react';
 import { OnboardingStepper } from './OnboardingStepper';
+import type { VaultData } from '../../lib/vault';
+import { saveVault } from '../../lib/vault';
 
 export const LockScreen: React.FC = () => {
   const { unlockVault } = useVault();
-  const [step, setStep] = useState<'loading' | 'welcome' | 'create' | 'greeting' | 'unlock'>('loading');
+  const [hasVault, setHasVault] = useState<boolean | null>(null);
   const [appConfig, setAppConfig] = useState<AppConfig | null>(null);
-
-  const [workspaceName, setWorkspaceName] = useState('My Workspace');
   const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-
+  const [appVersion, setAppVersion] = useState<string>('1.4.0');
   const [updateAvailable, setUpdateAvailable] = useState<any>(null);
   const [isUpdating, setIsUpdating] = useState(false);
-  const [appVersion, setAppVersion] = useState<string>('...');
-
-  const controls = useAnimation();
   const [time, setTime] = useState(new Date());
+
+  const inputRef = useRef<HTMLInputElement>(null);
+  const shakeControls = useAnimation();
 
   useEffect(() => {
     const timer = setInterval(() => setTime(new Date()), 1000);
@@ -38,50 +34,70 @@ export const LockScreen: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    const checkForUpdates = async () => {
-      try {
-        const update = await check();
-        if (update?.available) {
-          setUpdateAvailable(update);
+    getVersion().then(setAppVersion).catch(() => {});
+    
+    // Check for updater
+    check().then(update => {
+      if (update?.available) setUpdateAvailable(update);
+    }).catch(() => {});
+
+    // Check vault and config
+    Promise.all([vaultExists(), loadAppConfig()])
+      .then(([exists, config]) => {
+        setHasVault(exists);
+        if (config) {
+          setAppConfig(config);
+          if (config.accentColor) {
+            document.documentElement.style.setProperty('--color-accent', config.accentColor);
+          }
+          if (config.theme === 'dark') {
+            document.documentElement.classList.add('dark');
+          } else {
+            document.documentElement.classList.remove('dark');
+          }
         }
-      } catch (err) {
-        console.error("Failed to check for updates:", err);
-      }
-    };
-    checkForUpdates();
+      })
+      .catch(err => {
+        console.error("Failed to load initial vault state:", err);
+        setHasVault(false);
+      });
   }, []);
 
+  // Auto-focus password input as soon as lock screen mounts
   useEffect(() => {
-    Promise.all([vaultExists(), loadAppConfig()]).then(([hasVault, config]) => {
-      if (!hasVault) {
-        setStep('welcome');
-      } else {
-        setAppConfig(config);
-        if (config?.accentColor) {
-          document.documentElement.style.setProperty('--color-accent', config.accentColor);
-        }
-        if (config?.theme === 'dark') {
-          document.documentElement.classList.add('dark');
-        } else {
-          document.documentElement.classList.remove('dark');
-        }
-        setStep('greeting');
-      }
-    }).catch(console.error);
-  }, []);
-
-  useEffect(() => {
-    getVersion().then(setAppVersion).catch(console.error);
-  }, []);
+    if (hasVault) {
+      setTimeout(() => inputRef.current?.focus(), 100);
+    }
+  }, [hasVault]);
 
   const triggerErrorShake = () => {
-    controls.start({
-      x: [0, -8, 8, -8, 8, 0],
-      transition: { duration: 0.4, ease: 'easeInOut' }
+    shakeControls.start({
+      x: [0, -8, 8, -6, 6, -3, 3, 0],
+      transition: { duration: 0.35, ease: 'easeOut' }
     });
   };
 
-    const handleStepperComplete = async (newWorkspaceName: string, newPassword: string) => {
+  const handleUnlock = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!password || isLoading) return;
+
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const { data, key, salt } = await loadVault(password);
+      unlockVault(key, salt, data);
+    } catch (err: any) {
+      setError("Decryption failed. Incorrect master password.");
+      triggerErrorShake();
+      setTimeout(() => inputRef.current?.focus(), 50);
+    } finally {
+      setIsLoading(false);
+      setPassword('');
+    }
+  };
+
+  const handleStepperComplete = async (newWorkspaceName: string, newPassword: string) => {
     setIsLoading(true);
     setError(null);
     try {
@@ -90,7 +106,7 @@ export const LockScreen: React.FC = () => {
         credentials: [],
         settings: {
           workspaceName: newWorkspaceName,
-          subtitle: 'Personal Node',
+          subtitle: 'Personal Vault',
           fontSize: 'Default',
           uiDensity: 'Comfortable',
           autoLockTimer: '5 min'
@@ -100,81 +116,13 @@ export const LockScreen: React.FC = () => {
       await saveAppConfig({ workspaceName: newWorkspaceName });
       unlockVault(key, salt, initialData);
     } catch (err: any) {
-      setError(err.message || "Cryptographic generation failed.");
+      setError(err.message || "Failed to initialize cryptographic vault.");
       setIsLoading(false);
     }
   };
-
-  const handleCreate = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!password || password !== confirmPassword) {
-      setError("Cryptographic keys must match.");
-      triggerErrorShake();
-      return;
-    }
-    if (password.length < 8) {
-      setError("Insufficient entropy: Minimum 8 characters required.");
-      triggerErrorShake();
-      return;
-    }
-
-    setIsLoading(true);
-    setError(null);
-    try {
-      const initialData: VaultData = {
-        todos: [],
-        credentials: [],
-        settings: {
-          workspaceName,
-          subtitle: 'Personal Node',
-          fontSize: 'Default',
-          uiDensity: 'Comfortable',
-          autoLockTimer: '5 min'
-        }
-      };
-      const { key, salt } = await saveVault(password, initialData);
-      await saveAppConfig({ workspaceName });
-      unlockVault(key, salt, initialData);
-    } catch (err: any) {
-      setError("Node initialization failed.");
-      triggerErrorShake();
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleUnlock = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!password) return;
-
-    setIsLoading(true);
-    setError(null);
-    try {
-      const { data, key, salt } = await loadVault(password);
-      unlockVault(key, salt, data);
-    } catch (err: any) {
-      setError("Decryption failed. Invalid credentials.");
-      triggerErrorShake();
-    } finally {
-      setIsLoading(false);
-      setPassword('');
-    }
-  };
-
-  if (step === 'loading') {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-[#050507]">
-        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-[#008EFF]"></div>
-      </div>
-    );
-  }
-
-  if (step === 'welcome' || step === 'create') {
-    return <OnboardingStepper onComplete={handleStepperComplete} />;
-  }
 
   const handleUpdateApp = async () => {
-    if (!updateAvailable) return;
+    if (!updateAvailable || isUpdating) return;
     setIsUpdating(true);
     try {
       await updateAvailable.downloadAndInstall();
@@ -184,210 +132,169 @@ export const LockScreen: React.FC = () => {
     }
   };
 
-  const containerVariants: any = {
-    initial: { opacity: 0, scale: 0.95 },
-    animate: { opacity: 1, scale: 1, transition: { duration: 0.4, ease: "easeOut" } },
-    exit: { opacity: 0, scale: 0.95, transition: { duration: 0.3, ease: 'easeIn' } }
-  };
+  // Loading state
+  if (hasVault === null) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-[#09090b]">
+        <div className="w-6 h-6 border-2 border-zinc-700 border-t-blue-500 rounded-full animate-spin" />
+      </div>
+    );
+  }
 
+  // Initial setup stepper if no vault exists yet
+  if (!hasVault) {
+    return <OnboardingStepper onComplete={handleStepperComplete} />;
+  }
 
   return (
-    <div className="relative w-screen min-h-screen overflow-y-auto flex items-center justify-center bg-[#050507] py-8 px-4">
+    <div className="relative w-screen min-h-screen flex flex-col justify-between items-center bg-[#09090b] text-zinc-100 select-none overflow-hidden p-6 sm:p-10">
       
-      {/* Dynamic WebGL Background */}
-      <div className="absolute inset-0 z-0">
-        <WebThreads
-          color1={appConfig?.accentColor || '#008EFF'}
-          color2={appConfig?.accentColor ? `${appConfig.accentColor}80` : '#003b73'}
-          color3="#FFFFFF"
-          backgroundColor="#050507"
-          speed={0.2}
-          threadCount={6}
-          spread={0.2}
-          glow={0.03}
-          brightness={0.8}
-          mouseInteraction={true}
-          mouseStrength={0.4}
-        />
-      </div>
+      {/* Precision Geometric Security Grid Background (No GPU loop) */}
+      <div className="absolute inset-0 pointer-events-none opacity-[0.035] bg-[linear-gradient(to_right,#ffffff_1px,transparent_1px),linear-gradient(to_bottom,#ffffff_1px,transparent_1px)] bg-[size:40px_40px]" />
+      
+      {/* Subtle Radial Sovereign Ambient Core */}
+      <div 
+        className="absolute inset-0 pointer-events-none opacity-40"
+        style={{
+          background: 'radial-gradient(circle at 50% 42%, rgba(37,99,235,0.12) 0%, rgba(9,9,11,0) 65%)'
+        }}
+      />
 
-      {/* Update Pill */}
-      <AnimatePresence>
-        {updateAvailable && (
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            className="absolute top-8 right-8 z-50"
-          >
-            <button 
+      {/* Top Header: Updater & Clock */}
+      <header className="relative z-10 w-full max-w-4xl flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+          <span className="text-[11px] font-mono tracking-wider text-zinc-500 uppercase">
+            Encrypted Enclave Active
+          </span>
+        </div>
+
+        <div className="flex items-center gap-3">
+          {updateAvailable && (
+            <button
               onClick={handleUpdateApp}
               disabled={isUpdating}
-              className="group flex items-center gap-3 bg-[#050507]/40 backdrop-blur-xl border border-accent/30 hover:bg-accent/10 hover:border-accent px-4 py-2.5 rounded-full shadow-2xl transition-all"
+              className="flex items-center gap-1.5 px-3 py-1 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/30 rounded-full text-blue-400 text-xs transition-colors active:scale-95"
             >
-              <div className="w-6 h-6 rounded-full bg-accent/20 flex items-center justify-center text-accent group-hover:scale-110 transition-transform">
-                {isUpdating ? (
-                  <div className="animate-spin rounded-full h-3 w-3 border-t-2 border-[#008EFF] border-r-transparent"></div>
-                ) : (
-                  <DownloadCloud size={12} strokeWidth={2.5} />
-                )}
-              </div>
-              <div className="text-left">
-                <p className="text-[10px] text-accent uppercase tracking-widest font-bold">
-                  {isUpdating ? "Installing Update..." : "Update Available"}
-                </p>
-                {!isUpdating && (
-                  <p className="text-xs text-white font-medium">
-                    v{updateAvailable.version} Ready to Install
-                  </p>
-                )}
-              </div>
+              <DownloadCloud size={13} className={isUpdating ? "animate-bounce" : ""} />
+              <span>{isUpdating ? "Updating..." : `v${updateAvailable.version} Available`}</span>
             </button>
-          </motion.div>
-        )}
-      </AnimatePresence>
+          )}
 
-      {/* Glassmorphism Container */}
-      <div className="relative z-10 w-full max-w-sm px-4">
-        {/* OS Clock */}
-        <div className="flex flex-col items-center mb-8">
-          <h1 className="text-4xl sm:text-5xl font-light text-white tracking-wider mb-1.5 tabular-nums">
-            {time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+          <div className="text-right">
+            <span className="text-xs font-mono tabular-nums text-zinc-400">
+              {time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+            </span>
+          </div>
+        </div>
+      </header>
+
+      {/* Center Sovereign Unlock Hub */}
+      <main className="relative z-10 w-full max-w-sm flex flex-col items-center my-auto">
+        
+        {/* Hardware Prism Shield Bezel */}
+        <div className="relative mb-6">
+          <div className="w-16 h-16 rounded-2xl bg-zinc-900 border border-zinc-800/90 shadow-2xl flex items-center justify-center p-3 transition-transform hover:scale-105 duration-200">
+            <img src={logoUrl} alt="Tectoryx" className="w-full h-full object-contain drop-shadow" />
+          </div>
+          <div className="absolute -inset-1 rounded-2xl bg-blue-500/10 -z-10 blur-xs" />
+        </div>
+
+        {/* Brand & Workspace Identity */}
+        <div className="text-center mb-8">
+          <h1 className="text-xs font-bold tracking-[0.28em] uppercase text-zinc-400 mb-1.5">
+            Tectoryx
           </h1>
-          <p className="text-xs text-zinc-400 uppercase tracking-[0.2em]">
-            {time.toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric' })}
+          <p className="text-base font-semibold text-white tracking-tight">
+            {appConfig?.workspaceName || 'Master Vault'}
+          </p>
+          <p className="text-xs text-zinc-500 mt-0.5">
+            Local AES-256-GCM zero-knowledge partition
           </p>
         </div>
 
-        <div className="bg-[#050507]/60 backdrop-blur-2xl border border-white/10 rounded-xl shadow-2xl p-6 sm:p-8 w-full flex flex-col items-center text-center">
-          
-          {/* Card Header Branding */}
-          <div className="flex items-center gap-2 text-zinc-500 text-[10px] font-bold tracking-widest uppercase mb-8">
-            <img src={logoUrl} alt="Tectoryx" className="w-4 h-4 rounded-xs" />
-            <span>Tectoryx</span>
+        {/* Unlock Form with Motion Error Shake */}
+        <motion.form 
+          animate={shakeControls}
+          onSubmit={handleUnlock}
+          className="w-full space-y-3"
+        >
+          <div className={`relative flex items-center bg-zinc-900/90 border rounded-xl transition-all shadow-inner ${
+            error 
+              ? 'border-rose-500/80 ring-1 ring-rose-500/30' 
+              : 'border-zinc-800 focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500/30'
+          }`}>
+            <div className="pl-3.5 text-zinc-500">
+              <Lock size={15} strokeWidth={1.75} />
+            </div>
+
+            <input
+              ref={inputRef}
+              type={showPassword ? 'text' : 'password'}
+              value={password}
+              onChange={(e) => {
+                setPassword(e.target.value);
+                if (error) setError(null);
+              }}
+              placeholder="Enter master password"
+              disabled={isLoading}
+              className="w-full bg-transparent px-3 py-3 text-xs sm:text-sm text-white placeholder-zinc-500 focus:outline-none font-mono tracking-wider"
+            />
+
+            <div className="flex items-center pr-2 gap-1">
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="p-1.5 text-zinc-500 hover:text-zinc-300 rounded transition-colors"
+                title={showPassword ? "Hide password" : "Show password"}
+                tabIndex={-1}
+              >
+                {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
+              </button>
+
+              <button
+                type="submit"
+                disabled={isLoading || !password}
+                className="w-7 h-7 rounded-lg bg-blue-600 hover:bg-blue-500 text-white flex items-center justify-center transition-all disabled:opacity-30 disabled:pointer-events-none active:scale-95 shadow-sm"
+                title="Unlock (Enter)"
+              >
+                {isLoading ? (
+                  <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                ) : (
+                  <ArrowRight size={14} strokeWidth={2.25} />
+                )}
+              </button>
+            </div>
           </div>
 
-          <AnimatePresence mode="wait">
+          {/* Feedback & Error Text */}
+          {error ? (
+            <div className="flex items-center gap-1.5 text-rose-400 text-xs px-1">
+              <ShieldAlert size={13} className="shrink-0" />
+              <span>{error}</span>
+            </div>
+          ) : (
+            <div className="flex items-center justify-between text-[11px] text-zinc-500 px-1 font-mono">
+              <span>Press Enter ↵ to decrypt</span>
+              <span>Offline</span>
+            </div>
+          )}
+        </motion.form>
 
-            {(step === 'greeting') && (
-              <motion.div 
-                key="greeting"
-                variants={containerVariants}
-                initial="initial"
-                animate="animate"
-                exit="exit"
-                className="flex flex-col items-center w-full"
-              >
-                <div className="w-16 h-16 rounded-full bg-accent/10 border border-accent/20 flex items-center justify-center text-accent mb-6 overflow-hidden">
-                  {appConfig?.avatarBase64 ? (
-                    <img src={appConfig.avatarBase64} alt="Avatar" className="w-full h-full object-cover" />
-                  ) : (
-                    <User size={28} strokeWidth={1.5} />
-                  )}
-                </div>
-                <h2 className="text-xl font-medium text-white">Welcome back</h2>
-                <p className="text-xs text-zinc-400 mt-2">Node connection established.</p>
-                <motion.button
-                  onClick={() => setStep('unlock')}
-                  whileTap={{ scale: 0.98 }}
-                  className="w-full bg-accent hover:bg-accent/80 text-white rounded-lg px-4 py-3 mt-8 font-medium transition-colors"
-                >
-                  Log In
-                </motion.button>
-              </motion.div>
-            )}
+      </main>
 
-            {(step === 'unlock') && (
-              <motion.div 
-                key="unlock"
-                variants={containerVariants}
-                initial="initial"
-                animate="animate"
-                exit="exit"
-                className="flex flex-col items-center w-full"
-              >
-                <div className="w-20 h-20 rounded-full bg-accent/10 border border-accent/20 flex items-center justify-center text-accent mb-4 overflow-hidden">
-                  {appConfig?.avatarBase64 ? (
-                    <img src={appConfig.avatarBase64} alt="Avatar" className="w-full h-full object-cover" />
-                  ) : (
-                    <User size={32} strokeWidth={1.5} />
-                  )}
-                </div>
-                <h1 className="text-white font-semibold text-xl tracking-tight">
-                  Welcome back
-                </h1>
-                <p className="text-xs text-zinc-400 mt-2 mb-2 leading-relaxed">
-                  {appConfig?.subtitle || 'Personal Node'}
-                </p>
-
-                {error && (
-                  <motion.div 
-                    initial={{ opacity: 0, y: -5 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="mt-4 mb-2 w-full p-3 bg-red-950/30 border border-red-900/50 flex items-start justify-center gap-2 text-red-400 text-xs font-medium rounded-lg"
-                  >
-                    <ShieldAlert className="w-4 h-4 shrink-0" strokeWidth={1.5} />
-                    <p className="leading-relaxed">{error}</p>
-                  </motion.div>
-                )}
-
-                <motion.form 
-                  onSubmit={handleUnlock} 
-                  className="w-full mt-4"
-                  animate={controls}
-                >
-                  <div className="relative">
-                    <input
-                      type={showPassword ? "text" : "password"}
-                      value={password}
-                      onChange={(e) => {
-                        setPassword(e.target.value);
-                        if (error) setError(null);
-                      }}
-                      className="w-full bg-[#050507]/50 border border-white/10 text-white rounded-lg px-4 py-3 outline-none transition-all focus:border-accent focus:ring-1 focus:ring-accent/50 text-sm placeholder-zinc-500 text-center"
-                      placeholder="Master Password"
-                      disabled={isLoading}
-                      autoFocus
-                    />
-                    <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300 transition-colors">
-                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                    </button>
-                  </div>
-
-                  <motion.button
-                    type="submit"
-                    disabled={isLoading}
-                    whileTap={{ scale: isLoading ? 1 : 0.98 }}
-                    className="w-full bg-accent hover:bg-accent/80 text-white rounded-lg px-4 py-3 mt-6 font-medium transition-colors disabled:opacity-50"
-                  >
-                    {isLoading ? (
-                      <div className="w-full flex justify-center">
-                        <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-white/50 border-r-transparent"></div>
-                      </div>
-                    ) : (
-                      "Unlock Vault"
-                    )}
-                  </motion.button>
-                </motion.form>
-              </motion.div>
-            )}
-          </AnimatePresence>
-
+      {/* Bottom Footer Status Bar */}
+      <footer className="relative z-10 w-full max-w-4xl flex items-center justify-between text-[11px] text-zinc-500 font-mono border-t border-zinc-900 pt-4">
+        <div className="flex items-center gap-2">
+          <span>Tectoryx v{appVersion}</span>
+          <span>•</span>
+          <span>Zero-Knowledge Architecture</span>
         </div>
-      </div>
-      
-      {/* System Status Bar */}
-      <div className="absolute bottom-8 w-full flex justify-center pointer-events-none">
-        <p className="text-[10px] text-zinc-600 tracking-widest uppercase font-semibold">
-          [ NODE: LOCAL ]  &bull;  AES-256  &bull;  v{appVersion}
-        </p>
-      </div>
+        <div>
+          <span>{time.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' })}</span>
+        </div>
+      </footer>
+
     </div>
   );
 };
-
-
-
-
-
-
