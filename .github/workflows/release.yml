@@ -36,8 +36,8 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ""
         with:
           tagName: ${{ github.ref_name }}
-          releaseName: "Cryptex ${{ github.ref_name }}"
-          releaseBody: "Automated release of Cryptex."
+          releaseName: "Tectoryx ${{ github.ref_name }}"
+          releaseBody: "Automated release of Tectoryx."
           releaseDraft: false
           prerelease: false
           includeUpdaterJson: true
