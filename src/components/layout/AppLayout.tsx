@@ -1,41 +1,87 @@
-import { GhostPet } from '../ui/GhostPet';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
-import { LayoutDashboard, Lock, StickyNote, CheckSquare, Calendar, DollarSign, ChevronLeft, ChevronRight, User, Settings as SettingsIcon, Search } from 'lucide-react';
+import { 
+  LayoutDashboard, 
+  Lock, 
+  StickyNote, 
+  CheckSquare, 
+  Calendar, 
+  DollarSign, 
+  ChevronLeft, 
+  ChevronRight, 
+  User, 
+  Settings as SettingsIcon, 
+  Search,
+  Menu,
+  X,
+  ArrowLeft,
+  PanelLeftClose,
+  PanelLeft
+} from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useVault } from '../../context/VaultContext';
 import { GlobalSearch } from '../ui/GlobalSearch';
-import ShinyText from '../ui/ShinyText';
 import { UpdateLogsModal } from '../modals/UpdateLogsModal';
+import { GhostPet } from '../ui/GhostPet';
 
 interface AppLayoutProps {
   children: ReactNode;
   activeTab: string;
   setActiveTab: (tab: string, action?: 'create') => void;
   middlePane?: ReactNode;
+  hasDetail?: boolean;
+  onBackToList?: () => void;
 }
 
-export const AppLayout: React.FC<AppLayoutProps> = ({ children, middlePane, activeTab, setActiveTab }) => {
+export const AppLayout: React.FC<AppLayoutProps> = ({ 
+  children, 
+  middlePane, 
+  activeTab, 
+  setActiveTab,
+  hasDetail,
+  onBackToList 
+}) => {
+  const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1200);
+  const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isMiddlePaneOpen, setIsMiddlePaneOpen] = useState(true);
-  const [isLoggingOut, setIsLoggingOut] = useState(false);
-  const [farewellMessage, setFarewellMessage] = useState('');
+
   const { vaultData, lockVault, lockCountdown } = useVault();
 
-  const farewellMessages = [
-    "Goodbye",
-    "See you later",
-    "Stay secure",
-    "Until next time",
-    "Catch you on the flip side",
-    "Signing off"
-  ];
+  useEffect(() => {
+    const handleResize = () => {
+      const width = window.innerWidth;
+      setWindowWidth(width);
+      if (width >= 768 && isMobileDrawerOpen) {
+        setIsMobileDrawerOpen(false);
+      }
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [isMobileDrawerOpen]);
+
+  const isMobile = windowWidth < 768;
+  const isTablet = windowWidth >= 768 && windowWidth < 1024;
+
+  // Auto-collapse sidebar on tablet view to preserve reading space
+  useEffect(() => {
+    if (isTablet) {
+      setIsSidebarCollapsed(true);
+    } else if (windowWidth >= 1024) {
+      setIsSidebarCollapsed(false);
+    }
+  }, [isTablet, windowWidth]);
 
   const handleLockRequest = () => {
-    setFarewellMessage(farewellMessages[Math.floor(Math.random() * farewellMessages.length)]);
-    setIsLoggingOut(true);
-    setTimeout(() => {
-      lockVault();
-    }, 2500);
+    setIsMobileDrawerOpen(false);
+    lockVault();
+  };
+
+  const handleTabClick = (tabName: string) => {
+    setActiveTab(tabName);
+    if (isMobile) {
+      setIsMobileDrawerOpen(false);
+    }
   };
 
   const workspaceName = vaultData?.settings?.workspaceName || 'My Workspace';
@@ -53,24 +99,8 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children, middlePane, acti
   return (
     <>
       <UpdateLogsModal />
-      <AnimatePresence>
-        {isLoggingOut && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[99999] bg-white dark:bg-[#050507] flex items-center justify-center"
-          >
-            <ShinyText 
-              text={farewellMessage} 
-              speed={2} 
-              className="text-4xl font-bold font-sans tracking-tight text-gray-900 dark:text-white" 
-            />
-          </motion.div>
-        )}
-      </AnimatePresence>
-
       <GlobalSearch onNavigate={setActiveTab} />
+
       {/* Auto-Lock Warning Banner */}
       <AnimatePresence>
         {lockCountdown !== null && lockCountdown > 0 && (
@@ -78,155 +108,340 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children, middlePane, acti
             initial={{ opacity: 0, scale: 0.95, y: "-50%", x: "-50%" }}
             animate={{ opacity: 1, scale: 1, y: "-50%", x: "-50%" }}
             exit={{ opacity: 0, scale: 0.95, y: "-50%", x: "-50%" }}
-            className="fixed top-1/2 left-1/2 z-[100] bg-white/90 dark:bg-[#141414]/90 backdrop-blur-md text-gray-900 dark:text-zinc-100 px-6 py-4 rounded-xl shadow-2xl flex flex-col items-center gap-2 border border-gray-200 dark:border-[#262626]"
+            transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
+            className="fixed top-1/2 left-1/2 z-[100] bg-white/95 dark:bg-[#141414]/95 backdrop-blur-md text-gray-900 dark:text-zinc-100 px-5 py-3.5 rounded-lg shadow-xl flex flex-col items-center gap-1.5 border border-gray-200 dark:border-[#262626]"
           >
-            <div className="flex items-center gap-3">
-              <div className="relative flex h-2.5 w-2.5">
+            <div className="flex items-center gap-2.5">
+              <span className="relative flex h-2 w-2">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500"></span>
-              </div>
-              <p className="text-sm font-medium">Vault locking in <span className="font-mono font-bold text-red-500 ml-1">{lockCountdown}s</span></p>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+              </span>
+              <p className="text-xs font-medium">
+                Vault locks in <span className="tabular-nums font-bold text-red-500 ml-1">{lockCountdown}s</span>
+              </p>
             </div>
-            <p className="text-[11px] text-gray-500 dark:text-zinc-500 mt-1">Move mouse to abort</p>
+            <p className="text-[10px] text-gray-500 dark:text-zinc-500">Move pointer to cancel</p>
           </motion.div>
         )}
       </AnimatePresence>
 
-      <div className="flex h-screen w-full bg-white dark:bg-[#0a0a0a] overflow-hidden text-sm">
-        {/* LEFT PANE: Sidebar */}
-        <aside className="w-64 bg-[#f7f7f7] dark:bg-[#121212] border-r border-gray-200 dark:border-[#262626] flex flex-col flex-shrink-0 z-20 relative">
-          {/* Subtle mesh texture at bottom */}
-          
-          
-          <div className="h-16 flex items-center px-6 border-b border-gray-200 dark:border-[#262626] shrink-0 relative z-10 bg-[#f7f7f7] dark:bg-[#121212]">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-full bg-accent/10 border border-accent/20 flex items-center justify-center text-accent overflow-hidden shrink-0">
-                {vaultData?.settings?.avatarBase64 ? (
-                  <img src={vaultData.settings.avatarBase64} alt="Avatar" className="w-full h-full object-cover" />
-                ) : (
-                  <User size={16} strokeWidth={1.5} />
-                )}
-              </div>
-              <div>
-                <p className="font-semibold text-gray-900 dark:text-zinc-100 leading-tight">{workspaceName}</p>
-                <p className="text-xs text-gray-500 dark:text-zinc-500">{subtitle}</p>
+      <div className="flex h-screen w-full bg-white dark:bg-[#0a0a0a] overflow-hidden text-sm select-none">
+        
+        {/* MOBILE TOP NAVIGATION BAR (< 768px) */}
+        {isMobile && (
+          <header className="fixed top-0 left-0 right-0 h-13 bg-[#fafafa] dark:bg-[#111113] border-b border-gray-200 dark:border-[#262626] flex items-center justify-between px-3.5 z-40">
+            <div className="flex items-center gap-2.5">
+              <button
+                onClick={() => setIsMobileDrawerOpen(true)}
+                className="p-1.5 rounded-md text-gray-700 dark:text-zinc-300 hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors active:scale-[0.97]"
+                aria-label="Open Navigation Menu"
+              >
+                <Menu size={18} strokeWidth={1.75} />
+              </button>
+              <div className="flex items-center gap-2">
+                <div className="w-6 h-6 rounded-full bg-zinc-200 dark:bg-zinc-800 flex items-center justify-center overflow-hidden shrink-0 border border-gray-200 dark:border-[#262626]">
+                  {vaultData?.settings?.avatarBase64 ? (
+                    <img src={vaultData.settings.avatarBase64} alt="Avatar" className="w-full h-full object-cover" />
+                  ) : (
+                    <User size={13} strokeWidth={1.75} className="text-zinc-600 dark:text-zinc-300" />
+                  )}
+                </div>
+                <span className="font-semibold text-xs text-gray-900 dark:text-zinc-100 truncate max-w-[140px]">
+                  {workspaceName}
+                </span>
               </div>
             </div>
-          </div>
 
-          <div className="px-4 pt-4 pb-2 relative z-10">
-            <button 
-              onClick={() => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', ctrlKey: true }))} 
-              className="tour-global-search w-full bg-white dark:bg-[#0a0a0a] border border-gray-200 dark:border-[#262626] text-gray-500 dark:text-zinc-500 hover:text-gray-900 dark:text-zinc-100 hover:border-gray-300 dark:border-white/20 rounded-md py-1.5 px-3 flex items-center justify-between text-xs transition-colors shadow-sm"
-            >
-              <span className="flex items-center gap-2"><Search size={14} /> Search</span>
-              <span className="bg-gray-100 dark:bg-zinc-900 text-gray-500 dark:text-zinc-500 px-1.5 py-0.5 rounded border border-gray-200 dark:border-[#262626] text-[10px] font-mono">Ctrl+K</span>
-            </button>
-          </div>
-
-                    <nav className="flex-1 overflow-y-auto py-2 flex flex-col space-y-1 relative z-10 px-2">
-            {navItems.map((item) => {
-              const Icon = item.icon;
-              const isActive = activeTab === item.name;
-              return (
-                <motion.button
-                  key={item.name}
-                  onClick={() => setActiveTab(item.name)}
-                  whileHover="hover"
-                  className={`tour-sidebar-${item.name.toLowerCase().replace(/\s+/g, '-')} w-full flex items-center gap-3 px-3 py-1.5 rounded-lg transition-colors duration-150 ${
-                    isActive 
-                      ? 'bg-gray-200/60 dark:bg-white/10 text-gray-900 dark:text-white font-medium' 
-                      : 'text-gray-600 dark:text-zinc-400 hover:bg-gray-100 dark:hover:bg-white/5 hover:text-gray-900 dark:hover:text-white'
-                  } group`}
-                >
-                  <motion.div 
-                    variants={{ hover: { x: 4 } }} 
-                    transition={{ type: 'spring', stiffness: 300, damping: 20 }}
-                    className={isActive ? 'text-gray-900 dark:text-white' : 'text-gray-500 dark:text-zinc-500 group-hover:text-gray-700 dark:group-hover:text-zinc-300'}
-                  >
-                    <Icon size={18} strokeWidth={1.5} />
-                  </motion.div>
-                  {item.name}
-                </motion.button>
-              )
-            })}
-            
-            <div className="mt-auto pt-4 flex flex-col space-y-1">
-              <motion.button
-                onClick={() => setActiveTab('Settings')}
-                whileHover="hover"
-                className={`tour-sidebar-settings w-full flex items-center gap-3 px-3 py-1.5 rounded-lg transition-colors duration-150 ${
-                  activeTab === 'Settings' 
-                    ? 'bg-gray-200/60 dark:bg-white/10 text-gray-900 dark:text-white font-medium' 
-                    : 'text-gray-600 dark:text-zinc-400 hover:bg-gray-100 dark:hover:bg-white/5 hover:text-gray-900 dark:hover:text-white'
-                } group`}
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', ctrlKey: true }))}
+                className="p-2 rounded-md text-gray-600 dark:text-zinc-400 hover:text-gray-900 dark:hover:text-zinc-100 hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors active:scale-[0.97]"
+                title="Search (Ctrl+K)"
               >
-                <motion.div 
-                  variants={{ hover: { x: 4 } }} 
-                  transition={{ type: 'spring', stiffness: 300, damping: 20 }}
-                  className={activeTab === 'Settings' ? 'text-gray-900 dark:text-white' : 'text-gray-500 dark:text-zinc-500 group-hover:text-gray-700 dark:group-hover:text-zinc-300'}
-                >
-                  <SettingsIcon size={18} strokeWidth={1.5} />
-                </motion.div>
-                Settings
-              </motion.button>
-              
-              <motion.button
+                <Search size={16} strokeWidth={1.75} />
+              </button>
+              <button
                 onClick={handleLockRequest}
-                whileHover="hover"
-                className="tour-lock-button w-full flex items-center gap-3 px-3 py-1.5 rounded-lg transition-colors duration-150 text-gray-600 dark:text-zinc-400 hover:bg-red-50 dark:hover:bg-red-500/10 hover:text-red-600 dark:hover:text-red-400 group"
+                className="p-2 rounded-md text-gray-600 dark:text-zinc-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 transition-colors active:scale-[0.97]"
+                title="Lock Vault"
               >
-                <motion.div 
-                  variants={{ hover: { x: 4 } }} 
-                  transition={{ type: 'spring', stiffness: 300, damping: 20 }}
-                  className="text-gray-400 group-hover:text-red-500"
-                >
-                  <Lock size={18} strokeWidth={1.5} />
-                </motion.div>
-                Lock Vault
-              </motion.button>
+                <Lock size={16} strokeWidth={1.75} />
+              </button>
             </div>
-          </nav>
-        </aside>
+          </header>
+        )}
 
-        {/* MIDDLE PANE: List View (Collapsible) */}
-        {middlePane && (
+        {/* MOBILE SLIDE-OVER DRAWER (< 768px) */}
+        <AnimatePresence>
+          {isMobile && isMobileDrawerOpen && (
+            <>
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.18 }}
+                onClick={() => setIsMobileDrawerOpen(false)}
+                className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50"
+              />
+              <motion.aside
+                initial={{ x: '-100%' }}
+                animate={{ x: 0 }}
+                exit={{ x: '-100%' }}
+                transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+                className="fixed inset-y-0 left-0 w-72 bg-[#fafafa] dark:bg-[#111113] border-r border-gray-200 dark:border-[#262626] z-50 flex flex-col p-4 shadow-2xl"
+              >
+                <div className="flex items-center justify-between pb-4 border-b border-gray-200 dark:border-[#262626]">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-full bg-zinc-200 dark:bg-zinc-800 flex items-center justify-center overflow-hidden shrink-0 border border-gray-200 dark:border-[#262626]">
+                      {vaultData?.settings?.avatarBase64 ? (
+                        <img src={vaultData.settings.avatarBase64} alt="Avatar" className="w-full h-full object-cover" />
+                      ) : (
+                        <User size={15} strokeWidth={1.75} className="text-zinc-600 dark:text-zinc-300" />
+                      )}
+                    </div>
+                    <div>
+                      <p className="font-semibold text-xs text-gray-900 dark:text-zinc-100">{workspaceName}</p>
+                      <p className="text-[11px] text-gray-500 dark:text-zinc-500">{subtitle}</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setIsMobileDrawerOpen(false)}
+                    className="p-1 rounded-md text-gray-500 hover:text-gray-900 dark:text-zinc-400 dark:hover:text-zinc-100 hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors"
+                  >
+                    <X size={16} strokeWidth={1.75} />
+                  </button>
+                </div>
+
+                <div className="py-3">
+                  <button 
+                    onClick={() => {
+                      setIsMobileDrawerOpen(false);
+                      window.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', ctrlKey: true }));
+                    }} 
+                    className="w-full bg-white dark:bg-[#0a0a0a] border border-gray-200 dark:border-[#262626] text-gray-500 dark:text-zinc-500 hover:text-gray-900 dark:hover:text-zinc-100 rounded-md py-1.5 px-3 flex items-center justify-between text-xs transition-colors"
+                  >
+                    <span className="flex items-center gap-2"><Search size={14} strokeWidth={1.75} /> Quick Search</span>
+                    <span className="bg-gray-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded text-[10px] tabular-nums font-medium">Ctrl+K</span>
+                  </button>
+                </div>
+
+                <nav className="flex-1 overflow-y-auto space-y-1 py-1">
+                  {navItems.map((item) => {
+                    const Icon = item.icon;
+                    const isActive = activeTab === item.name;
+                    return (
+                      <button
+                        key={item.name}
+                        onClick={() => handleTabClick(item.name)}
+                        className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium transition-colors active:scale-[0.97] ${
+                          isActive 
+                            ? 'bg-zinc-200/80 dark:bg-white/10 text-gray-900 dark:text-white' 
+                            : 'text-gray-600 dark:text-zinc-400 hover:bg-gray-100 dark:hover:bg-zinc-800/60 hover:text-gray-900 dark:hover:text-white'
+                        }`}
+                      >
+                        <Icon size={16} strokeWidth={1.75} className={isActive ? "text-gray-900 dark:text-white" : "text-gray-500 dark:text-zinc-400"} />
+                        <span>{item.name}</span>
+                      </button>
+                    );
+                  })}
+                </nav>
+
+                <div className="pt-3 border-t border-gray-200 dark:border-[#262626] space-y-1">
+                  <button
+                    onClick={() => handleTabClick('Settings')}
+                    className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium transition-colors active:scale-[0.97] ${
+                      activeTab === 'Settings' 
+                        ? 'bg-zinc-200/80 dark:bg-white/10 text-gray-900 dark:text-white' 
+                        : 'text-gray-600 dark:text-zinc-400 hover:bg-gray-100 dark:hover:bg-zinc-800/60 hover:text-gray-900 dark:hover:text-white'
+                    }`}
+                  >
+                    <SettingsIcon size={16} strokeWidth={1.75} />
+                    <span>Settings</span>
+                  </button>
+                  <button
+                    onClick={handleLockRequest}
+                    className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/20 transition-colors active:scale-[0.97]"
+                  >
+                    <Lock size={16} strokeWidth={1.75} />
+                    <span>Lock Vault</span>
+                  </button>
+                </div>
+              </motion.aside>
+            </>
+          )}
+        </AnimatePresence>
+
+        {/* DESKTOP & TABLET SIDEBAR (>= 768px) */}
+        {!isMobile && (
+          <aside className={`${isSidebarCollapsed ? 'w-16' : 'w-60'} bg-[#fafafa] dark:bg-[#111113] border-r border-gray-200 dark:border-[#262626] flex flex-col flex-shrink-0 z-20 transition-all duration-200 ease-out select-none`}>
+            {/* Header branding */}
+            <div className={`h-14 flex items-center ${isSidebarCollapsed ? 'justify-center px-2' : 'justify-between px-4'} border-b border-gray-200 dark:border-[#262626] shrink-0`}>
+              {!isSidebarCollapsed ? (
+                <>
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="w-7 h-7 rounded-full bg-zinc-200 dark:bg-zinc-800 border border-gray-200 dark:border-[#262626] flex items-center justify-center overflow-hidden shrink-0">
+                      {vaultData?.settings?.avatarBase64 ? (
+                        <img src={vaultData.settings.avatarBase64} alt="Avatar" className="w-full h-full object-cover" />
+                      ) : (
+                        <User size={14} strokeWidth={1.75} className="text-zinc-600 dark:text-zinc-300" />
+                      )}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="font-semibold text-xs text-gray-900 dark:text-zinc-100 leading-tight truncate">{workspaceName}</p>
+                      <p className="text-[11px] text-gray-500 dark:text-zinc-500 truncate">{subtitle}</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setIsSidebarCollapsed(true)}
+                    className="p-1 rounded-md text-gray-400 hover:text-gray-900 dark:hover:text-zinc-100 hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors active:scale-[0.97]"
+                    title="Collapse Sidebar"
+                  >
+                    <PanelLeftClose size={15} strokeWidth={1.75} />
+                  </button>
+                </>
+              ) : (
+                <button
+                  onClick={() => setIsSidebarCollapsed(false)}
+                  className="p-1.5 rounded-md text-gray-400 hover:text-gray-900 dark:hover:text-zinc-100 hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors active:scale-[0.97]"
+                  title="Expand Sidebar"
+                >
+                  <PanelLeft size={16} strokeWidth={1.75} />
+                </button>
+              )}
+            </div>
+
+            {/* Quick Search */}
+            <div className={`pt-3 pb-1 ${isSidebarCollapsed ? 'px-2' : 'px-3'}`}>
+              <button 
+                onClick={() => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', ctrlKey: true }))} 
+                className={`w-full bg-white dark:bg-[#0a0a0a] border border-gray-200 dark:border-[#262626] text-gray-500 dark:text-zinc-500 hover:text-gray-900 dark:hover:text-zinc-100 rounded-md py-1.5 ${isSidebarCollapsed ? 'px-2 justify-center' : 'px-2.5 justify-between'} flex items-center text-xs transition-colors shadow-2xs active:scale-[0.97]`}
+                title="Search (Ctrl+K)"
+              >
+                <span className="flex items-center gap-2">
+                  <Search size={14} strokeWidth={1.75} />
+                  {!isSidebarCollapsed && <span>Search</span>}
+                </span>
+                {!isSidebarCollapsed && (
+                  <span className="bg-gray-100 dark:bg-zinc-900 text-gray-500 dark:text-zinc-400 px-1 py-0.2 rounded border border-gray-200 dark:border-[#262626] text-[10px] tabular-nums font-medium">Ctrl+K</span>
+                )}
+              </button>
+            </div>
+
+            {/* Navigation links */}
+            <nav className="flex-1 overflow-y-auto py-2 flex flex-col space-y-0.5 px-2">
+              {navItems.map((item) => {
+                const Icon = item.icon;
+                const isActive = activeTab === item.name;
+                return (
+                  <button
+                    key={item.name}
+                    onClick={() => setActiveTab(item.name)}
+                    className={`relative w-full flex items-center ${isSidebarCollapsed ? 'justify-center py-2' : 'gap-3 px-3 py-1.5'} rounded-lg text-xs font-medium transition-colors active:scale-[0.97] ${
+                      isActive 
+                        ? 'text-gray-900 dark:text-white font-medium' 
+                        : 'text-gray-600 dark:text-zinc-400 hover:text-gray-900 dark:hover:text-zinc-100 hover:bg-gray-100/70 dark:hover:bg-zinc-800/40'
+                    }`}
+                    title={isSidebarCollapsed ? item.name : undefined}
+                  >
+                    {isActive && (
+                      <motion.div
+                        layoutId="active-sidebar-pill"
+                        className="absolute inset-0 bg-gray-200/80 dark:bg-white/10 rounded-lg -z-10"
+                        transition={{ type: 'spring', stiffness: 450, damping: 35 }}
+                      />
+                    )}
+                    <Icon size={17} strokeWidth={1.75} className={isActive ? 'text-gray-900 dark:text-white' : 'text-gray-500 dark:text-zinc-400'} />
+                    {!isSidebarCollapsed && <span>{item.name}</span>}
+                  </button>
+                );
+              })}
+
+              <div className="mt-auto pt-4 flex flex-col space-y-0.5 border-t border-gray-200 dark:border-[#262626]">
+                <button
+                  onClick={() => setActiveTab('Settings')}
+                  className={`relative w-full flex items-center ${isSidebarCollapsed ? 'justify-center py-2' : 'gap-3 px-3 py-1.5'} rounded-lg text-xs font-medium transition-colors active:scale-[0.97] ${
+                    activeTab === 'Settings' 
+                      ? 'text-gray-900 dark:text-white font-medium' 
+                      : 'text-gray-600 dark:text-zinc-400 hover:text-gray-900 dark:hover:text-zinc-100 hover:bg-gray-100/70 dark:hover:bg-zinc-800/40'
+                  }`}
+                  title={isSidebarCollapsed ? "Settings" : undefined}
+                >
+                  {activeTab === 'Settings' && (
+                    <motion.div
+                      layoutId="active-sidebar-pill"
+                      className="absolute inset-0 bg-gray-200/80 dark:bg-white/10 rounded-lg -z-10"
+                      transition={{ type: 'spring', stiffness: 450, damping: 35 }}
+                    />
+                  )}
+                  <SettingsIcon size={17} strokeWidth={1.75} className={activeTab === 'Settings' ? 'text-gray-900 dark:text-white' : 'text-gray-500 dark:text-zinc-400'} />
+                  {!isSidebarCollapsed && <span>Settings</span>}
+                </button>
+
+                <button
+                  onClick={handleLockRequest}
+                  className={`w-full flex items-center ${isSidebarCollapsed ? 'justify-center py-2' : 'gap-3 px-3 py-1.5'} rounded-lg text-xs font-medium text-gray-600 dark:text-zinc-400 hover:bg-red-50 dark:hover:bg-red-950/20 hover:text-red-600 dark:hover:text-red-400 transition-colors active:scale-[0.97]`}
+                  title={isSidebarCollapsed ? "Lock Vault" : undefined}
+                >
+                  <Lock size={17} strokeWidth={1.75} />
+                  {!isSidebarCollapsed && <span>Lock Vault</span>}
+                </button>
+              </div>
+            </nav>
+          </aside>
+        )}
+
+        {/* MIDDLE PANE: Desktop / Tablet Split View (>= 768px) */}
+        {!isMobile && middlePane && (
           <div 
-            className={`bg-white dark:bg-[#0a0a0a] border-r border-gray-200 dark:border-[#262626] transition-all duration-300 ease-in-out relative flex flex-col z-30 ${
-              isMiddlePaneOpen ? 'w-80' : 'w-0 border-r-0'
+            className={`bg-white dark:bg-[#111113] border-r border-gray-200 dark:border-[#262626] transition-all duration-200 ease-out relative flex flex-col z-10 ${
+              isMiddlePaneOpen ? 'w-72 lg:w-80' : 'w-0 border-r-0'
             }`}
           >
-            <div className={`flex-1 overflow-hidden min-w-[20rem] transition-opacity duration-200 ${!isMiddlePaneOpen && 'opacity-0'}`}>
+            <div className={`flex-1 overflow-hidden min-w-[18rem] lg:min-w-[20rem] transition-opacity duration-150 ${!isMiddlePaneOpen && 'opacity-0 pointer-events-none'}`}>
               {middlePane}
             </div>
 
             {/* Toggle Button */}
             <button 
               onClick={() => setIsMiddlePaneOpen(!isMiddlePaneOpen)}
-              className="absolute -right-3 top-5 w-6 h-6 bg-white dark:bg-[#0a0a0a] border border-gray-200 dark:border-[#262626] rounded-full flex items-center justify-center text-gray-400 hover:text-gray-900 dark:text-zinc-100 hover:shadow-sm transition-colors cursor-pointer"
-              style={{ zIndex: 100 }}
+              className="absolute -right-3 top-4 w-6 h-6 bg-white dark:bg-[#111113] border border-gray-200 dark:border-[#262626] rounded-full flex items-center justify-center text-gray-400 hover:text-gray-900 dark:hover:text-zinc-100 hover:shadow-xs transition-colors cursor-pointer z-30 active:scale-[0.95]"
+              title={isMiddlePaneOpen ? "Collapse List" : "Expand List"}
             >
-              {isMiddlePaneOpen ? <ChevronLeft size={14} strokeWidth={1.5} /> : <ChevronRight size={14} strokeWidth={1.5} />}
+              {isMiddlePaneOpen ? <ChevronLeft size={13} strokeWidth={1.75} /> : <ChevronRight size={13} strokeWidth={1.75} />}
             </button>
           </div>
         )}
 
-        {/* RIGHT PANE: Main Workspace */}
-        <main className="flex-1 bg-white dark:bg-[#0a0a0a] flex flex-col overflow-hidden relative">
-          <div className="flex-1 overflow-y-scroll">
-            {children}
+        {/* MAIN WORKSPACE / CONTENT PANE */}
+        <main className={`flex-1 bg-white dark:bg-[#0a0a0a] flex flex-col overflow-hidden relative ${isMobile ? 'pt-13' : ''}`}>
+          
+          {/* Mobile Drilldown Navigation (when inside My Vault or Notes on mobile) */}
+          {isMobile && middlePane && hasDetail && (
+            <div className="h-11 border-b border-gray-200 dark:border-[#262626] flex items-center px-4 bg-gray-50/80 dark:bg-[#111113]/80 backdrop-blur-md sticky top-0 z-30 shrink-0">
+              <button
+                onClick={onBackToList}
+                className="flex items-center gap-1.5 text-xs font-medium text-gray-600 dark:text-zinc-400 hover:text-gray-900 dark:hover:text-zinc-100 transition-colors active:scale-[0.97]"
+              >
+                <ArrowLeft size={15} strokeWidth={1.75} />
+                <span>Back to {activeTab} list</span>
+              </button>
+            </div>
+          )}
+
+          <div className="flex-1 overflow-y-auto">
+            {/* On mobile, if middlePane exists and we do NOT have an active detail item, show the middlePane full-width! */}
+            {isMobile && middlePane && !hasDetail ? (
+              <div className="h-full">
+                {middlePane}
+              </div>
+            ) : (
+              children
+            )}
           </div>
         </main>
+
         <GhostPet activeTab={activeTab} />
       </div>
     </>
   );
 };
-
-
-
-
-
-
-
-

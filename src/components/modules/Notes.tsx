@@ -15,7 +15,7 @@ import { ConfirmModal } from '../modals/ConfirmModal';
 import { SlashCommands, slashSuggestion } from '../editor/SlashCommand';
 import { getNoteMentionSuggestion } from '../editor/NoteLink';
 
-import 'highlight.js/styles/github-dark.css'; // Add basic highlight css
+import 'highlight.js/styles/github-dark.css';
 
 import { PromptModal } from '../modals/PromptModal';
 
@@ -47,12 +47,10 @@ export const NotesList: React.FC<{ selectedId: string | null; onSelect: (id: str
     await updateVaultData({ noteFolders: updated });
   };
 
-  // Very basic recursive renderer for 1 level for simplicity, but can be scaled
   const renderItems = (parentId?: string, depth = 0) => {
     const currentFolders = folders.filter(f => f.parentId === parentId);
     const currentNotes = notes.filter(n => n.folderId === parentId);
 
-    // If searching, flatten everything
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       const matchedNotes = notes.filter(n => n.title.toLowerCase().includes(q) || n.content.toLowerCase().includes(q));
@@ -62,17 +60,17 @@ export const NotesList: React.FC<{ selectedId: string | null; onSelect: (id: str
     }
 
     return (
-      <div className="space-y-1">
+      <div className="space-y-0.5">
         {currentFolders.map(folder => (
           <div key={folder.id}>
             <div 
               onClick={() => toggleFolder(folder.id)}
-              className="flex items-center gap-2 w-full p-2 rounded-md hover:bg-gray-100 dark:hover:bg-zinc-900 cursor-pointer text-gray-700 dark:text-zinc-300"
+              className="flex items-center gap-2 w-full p-2 rounded-md hover:bg-gray-100 dark:hover:bg-zinc-800/60 cursor-pointer text-gray-700 dark:text-zinc-300 active:scale-[0.98] transition-colors"
               style={{ paddingLeft: `${(depth * 12) + 8}px` }}
             >
-              {folder.isExpanded ? <ChevronDown size={14} className="opacity-50" /> : <ChevronRight size={14} className="opacity-50" />}
-              {folder.isExpanded ? <FolderOpen size={16} className="text-accent" /> : <Folder size={16} className="text-accent" />}
-              <span className="font-medium text-sm flex-1 truncate">{folder.name}</span>
+              {folder.isExpanded ? <ChevronDown size={13} className="opacity-50" strokeWidth={1.75} /> : <ChevronRight size={13} className="opacity-50" strokeWidth={1.75} />}
+              {folder.isExpanded ? <FolderOpen size={15} strokeWidth={1.75} className="text-zinc-700 dark:text-zinc-300" /> : <Folder size={15} strokeWidth={1.75} className="text-zinc-500 dark:text-zinc-400" />}
+              <span className="font-medium text-xs flex-1 truncate">{folder.name}</span>
             </div>
             {folder.isExpanded && renderItems(folder.id, depth + 1)}
           </div>
@@ -85,7 +83,7 @@ export const NotesList: React.FC<{ selectedId: string | null; onSelect: (id: str
   };
 
   return (
-    <div className="flex flex-col h-full bg-white dark:bg-[#141414]">
+    <div className="flex flex-col h-full bg-white dark:bg-[#111113]">
       <PromptModal
         isOpen={isPromptOpen}
         onClose={() => setIsPromptOpen(false)}
@@ -93,34 +91,42 @@ export const NotesList: React.FC<{ selectedId: string | null; onSelect: (id: str
         title="New Folder"
         placeholder="Enter folder name..."
       />
-      <div className="h-16 flex items-center justify-between px-6 border-b border-gray-200 dark:border-[#262626] shrink-0">
-        <h2 className="font-semibold text-gray-900 dark:text-zinc-100">Knowledge Graph</h2>
-        <div className="flex items-center gap-2">
-          <button onClick={() => setIsPromptOpen(true)} className="w-8 h-8 flex items-center justify-center hover:bg-gray-100 dark:hover:bg-zinc-900 rounded-md transition-colors text-gray-500" title="New Folder">
-            <Folder size={16} />
+      <div className="h-14 flex items-center justify-between px-4 sm:px-5 border-b border-gray-200 dark:border-[#262626] shrink-0">
+        <h2 className="font-semibold text-xs text-gray-900 dark:text-zinc-100 uppercase tracking-wider">Notes</h2>
+        <div className="flex items-center gap-1.5">
+          <button 
+            onClick={() => setIsPromptOpen(true)} 
+            className="w-7 h-7 flex items-center justify-center hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-md transition-colors text-gray-500 dark:text-zinc-400 active:scale-[0.95]" 
+            title="New Folder"
+          >
+            <Folder size={14} strokeWidth={1.75} />
           </button>
-          <button onClick={() => handleCreateNote()} className="w-8 h-8 flex items-center justify-center bg-white dark:bg-[#141414] border border-gray-200 dark:border-[#262626] hover:border-accent hover:text-accent rounded-md transition-colors text-gray-500 shadow-sm" title="New Note">
-            <Plus size={16} />
+          <button 
+            onClick={() => handleCreateNote()} 
+            className="w-7 h-7 flex items-center justify-center bg-white dark:bg-[#141416] border border-gray-200 dark:border-[#262626] hover:bg-gray-50 dark:hover:bg-zinc-800 rounded-md transition-colors text-gray-700 dark:text-zinc-300 shadow-2xs active:scale-[0.95]" 
+            title="New Note"
+          >
+            <Plus size={15} strokeWidth={1.75} />
           </button>
         </div>
       </div>
       
-      <div className="p-4 border-b border-gray-200 dark:border-[#262626] shrink-0">
+      <div className="p-3 border-b border-gray-200 dark:border-[#262626] shrink-0">
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 dark:text-zinc-500 w-3.5 h-3.5" strokeWidth={1.75} />
           <input 
             type="text" 
             placeholder="Search notes..." 
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-9 pr-4 py-2 bg-gray-50 dark:bg-[#1e1e1e] border border-gray-200 dark:border-[#262626] rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-accent"
+            className="w-full pl-8 pr-3 py-1.5 bg-gray-50 dark:bg-[#141416] border border-gray-200 dark:border-[#262626] rounded-md text-xs text-gray-900 dark:text-zinc-100 focus:outline-none focus:border-zinc-400 dark:focus:border-zinc-500 transition-colors"
           />
         </div>
       </div>
 
       <div className="flex-1 overflow-y-auto p-2">
         {folders.length === 0 && notes.length === 0 ? (
-          <p className="text-gray-400 text-xs text-center mt-6">No notes yet.</p>
+          <p className="text-gray-400 dark:text-zinc-600 text-xs text-center py-8 font-normal">No notes yet.</p>
         ) : (
           renderItems(undefined, 0)
         )}
@@ -132,13 +138,15 @@ export const NotesList: React.FC<{ selectedId: string | null; onSelect: (id: str
 const NoteItem = ({ note, selectedId, onSelect, depth }: any) => (
   <button
     onClick={() => onSelect(note.id)}
-    className={`w-full text-left p-2 rounded-md flex items-center gap-2 transition-colors ${
-      selectedId === note.id ? 'bg-accent/10 text-accent' : 'hover:bg-gray-100 dark:hover:bg-zinc-900 text-gray-700 dark:text-zinc-300'
+    className={`w-full text-left p-2 rounded-md flex items-center gap-2 transition-colors active:scale-[0.98] ${
+      selectedId === note.id 
+        ? 'bg-zinc-100 dark:bg-white/10 text-gray-900 dark:text-white shadow-2xs' 
+        : 'hover:bg-gray-50 dark:hover:bg-zinc-800/50 text-gray-700 dark:text-zinc-300'
     }`}
     style={{ paddingLeft: `${(depth * 12) + 8}px` }}
   >
-    <FileText size={16} className={selectedId === note.id ? "text-accent" : "opacity-60"} />
-    <span className="font-medium text-sm truncate flex-1">{note.title || 'Untitled'}</span>
+    <FileText size={14} strokeWidth={1.75} className={selectedId === note.id ? "text-gray-900 dark:text-white" : "opacity-50"} />
+    <span className="font-medium text-xs truncate flex-1">{note.title || 'Untitled Note'}</span>
   </button>
 );
 
@@ -152,29 +160,27 @@ export const NotesEditor: React.FC<{ selectedId: string | null; onSelect: (id: s
   const [title, setTitle] = useState('');
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
-  // Configure Tiptap
   const editor = useEditor({
     extensions: [
       StarterKit,
-      Placeholder.configure({ placeholder: "Type '/' for commands or '[[' to link a note. (Ctrl+Click links to open)" }),
+      Placeholder.configure({ placeholder: "Type '/' for commands or '[[' to link a note..." }),
       Image,
       CodeBlockLowlight.configure({ lowlight }),
       SlashCommands.configure({ suggestion: slashSuggestion }),
       Mention.configure({ 
         suggestion: getNoteMentionSuggestion(notes),
         HTMLAttributes: {
-          class: 'mention bg-accent/20 text-accent px-1.5 py-0.5 rounded cursor-pointer hover:bg-accent/30 transition-colors font-medium',
+          class: 'mention bg-zinc-200 dark:bg-zinc-800 text-gray-900 dark:text-zinc-100 px-1.5 py-0.5 rounded cursor-pointer hover:bg-zinc-300 dark:hover:bg-zinc-700 transition-colors font-medium text-xs',
         },
       })
     ],
     content: selectedNote?.content || '',
     editorProps: {
       attributes: {
-        class: 'prose prose-sm dark:prose-invert max-w-none focus:outline-none min-h-[400px]',
+        class: 'prose prose-sm dark:prose-invert max-w-none focus:outline-none min-h-[350px] text-xs sm:text-sm leading-relaxed',
       },
       handleDOMEvents: {
         click: (_, event) => {
-          // Require Ctrl (Windows/Linux) or Cmd (Mac) to follow links
           if (!event.ctrlKey && !event.metaKey) return false;
 
           let target = event.target as Node | null;
@@ -196,13 +202,11 @@ export const NotesEditor: React.FC<{ selectedId: string | null; onSelect: (id: s
     onUpdate: ({ editor }) => {
       handleSaveContent(editor.getHTML());
     },
-  }, [selectedId]); // Re-init when ID changes so it gets the fresh notes array for mentions
+  }, [selectedId]);
 
-  // Sync title
   useEffect(() => {
     if (selectedNote) {
       setTitle(selectedNote.title);
-      // We don't set editor content here because useEditor's dependency array handles re-mounting
     }
   }, [selectedNote?.id]);
 
@@ -242,8 +246,8 @@ export const NotesEditor: React.FC<{ selectedId: string | null; onSelect: (id: s
     return (
       <EmptyState 
         icon={FileText}
-        title="Knowledge Graph"
-        subtitle="Create a new note or select one from the sidebar."
+        title="Notes"
+        subtitle="Select a note from the list to start writing, or create a new one."
       />
     );
   }
@@ -258,33 +262,35 @@ export const NotesEditor: React.FC<{ selectedId: string | null; onSelect: (id: s
         message={`Are you sure you want to permanently delete "${selectedNote.title}"?`}
       />
       
-      <div className="h-full flex flex-col max-w-4xl mx-auto overflow-y-auto">
+      <div className="h-full flex flex-col p-4 sm:p-6 lg:p-8 max-w-3xl mx-auto w-full overflow-y-auto">
         {/* Toolbar */}
-        <div className="flex justify-end items-center p-6 pb-0 shrink-0 gap-2">
+        <div className="flex justify-end items-center pb-4 shrink-0 gap-2">
           <button 
             onClick={exportPDF}
-            className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium bg-white dark:bg-zinc-800 border border-gray-200 dark:border-[#262626] hover:border-accent hover:text-accent rounded-md transition-colors"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-white dark:bg-[#141416] border border-gray-200 dark:border-[#262626] hover:bg-gray-50 dark:hover:bg-zinc-800 rounded-md transition-colors text-gray-700 dark:text-zinc-300 shadow-2xs active:scale-[0.97]"
           >
-            <Download size={14} /> PDF
+            <Download size={13} strokeWidth={1.75} /> 
+            <span>Export PDF</span>
           </button>
           <button 
             onClick={() => setIsDeleteModalOpen(true)}
-            className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium bg-white dark:bg-zinc-800 border border-gray-200 dark:border-[#262626] hover:border-red-500 hover:text-red-500 rounded-md transition-colors text-gray-500"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-white dark:bg-[#141416] border border-gray-200 dark:border-[#262626] hover:bg-red-50 dark:hover:bg-red-950/20 text-gray-500 hover:text-rose-500 dark:hover:text-rose-400 rounded-md transition-colors shadow-2xs active:scale-[0.97]"
           >
-            <Trash2 size={14} /> Delete
+            <Trash2 size={13} strokeWidth={1.75} /> 
+            <span>Delete</span>
           </button>
         </div>
 
-        {/* Editor Wrapper */}
-        <div className="p-10 pt-6 flex-1" ref={editorRef}>
+        {/* Editor Area */}
+        <div className="flex-1" ref={editorRef}>
           <input
             type="text"
             value={title}
             onChange={(e) => handleSaveTitle(e.target.value)}
-            placeholder="Note Title"
-            className="w-full text-4xl font-bold bg-transparent text-gray-900 dark:text-white focus:outline-none mb-8 placeholder-gray-300 dark:placeholder-zinc-700"
+            placeholder="Untitled Note"
+            className="w-full text-2xl sm:text-3xl font-bold bg-transparent text-gray-900 dark:text-white focus:outline-none mb-6 placeholder-gray-300 dark:placeholder-zinc-700 tracking-tight text-balance"
           />
-          <div className="min-h-[500px]">
+          <div className="min-h-[400px]">
             <EditorContent editor={editor} />
           </div>
         </div>
@@ -292,6 +298,3 @@ export const NotesEditor: React.FC<{ selectedId: string | null; onSelect: (id: s
     </>
   );
 };
-
-
-

@@ -192,7 +192,7 @@ export const LockScreen: React.FC = () => {
 
 
   return (
-    <div className="relative w-screen h-screen overflow-hidden flex items-center justify-center bg-[#050507]">
+    <div className="relative w-screen min-h-screen overflow-y-auto flex items-center justify-center bg-[#050507] py-8 px-4">
       
       {/* Dynamic WebGL Background */}
       <div className="absolute inset-0 z-0">
@@ -251,7 +251,7 @@ export const LockScreen: React.FC = () => {
       <div className="relative z-10 w-full max-w-sm px-4">
         {/* OS Clock */}
         <div className="flex flex-col items-center mb-8">
-          <h1 className="text-5xl font-light text-white tracking-wider mb-2">
+          <h1 className="text-4xl sm:text-5xl font-light text-white tracking-wider mb-1.5 tabular-nums">
             {time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
           </h1>
           <p className="text-xs text-zinc-400 uppercase tracking-[0.2em]">
@@ -259,7 +259,7 @@ export const LockScreen: React.FC = () => {
           </p>
         </div>
 
-        <div className="bg-[#050507]/40 backdrop-blur-2xl border border-white/10 rounded-xl shadow-2xl p-10 w-full flex flex-col items-center text-center">
+        <div className="bg-[#050507]/60 backdrop-blur-2xl border border-white/10 rounded-xl shadow-2xl p-6 sm:p-8 w-full flex flex-col items-center text-center">
           
           {/* Card Header Branding */}
           <div className="flex items-center gap-2 text-zinc-500 text-[10px] font-bold tracking-widest uppercase mb-8">

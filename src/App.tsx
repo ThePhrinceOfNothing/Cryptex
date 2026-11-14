@@ -150,6 +150,12 @@ function AppContent() {
     content = <div className="p-8 text-gray-500 dark:text-zinc-500">Coming soon...</div>;
   }
 
+  const hasDetail = (activeTab === 'My Vault' || activeTab === 'Notes') && (selectedCredentialId !== null || isCreating);
+  const handleBackToList = () => {
+    setSelectedCredentialId(null);
+    setIsCreating(false);
+  };
+
   return (
     <AnimatePresence mode="wait">
       {isLocked ? (
@@ -168,6 +174,8 @@ function AppContent() {
                 activeTab={activeTab} 
                 setActiveTab={setActiveTab}
                 middlePane={middlePane}
+                hasDetail={hasDetail}
+                onBackToList={handleBackToList}
               >
                 <LazyOnboardingTour />
                 <React.Suspense fallback={

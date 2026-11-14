@@ -18,7 +18,15 @@ export const GhostPet: React.FC<{activeTab: string}> = ({ activeTab }) => {
   const [mousePos, setMousePos] = useState({ x: window.innerWidth / 2, y: window.innerHeight / 2 });
 
   useEffect(() => {
-    const handleResize = () => setWinSize({ w: window.innerWidth, h: window.innerHeight });
+    const handleResize = () => {
+      const w = window.innerWidth;
+      const h = window.innerHeight;
+      setWinSize({ w, h });
+      setPosition(prev => ({
+        x: Math.min(prev.x, Math.max(10, w - 80)),
+        y: Math.min(prev.y, Math.max(10, h - 80))
+      }));
+    };
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
@@ -260,9 +268,9 @@ const GhostUI: React.FC<{
           initial={{ opacity: 0, x: bubbleOnRight ? -10 : 10, scale: 0.9 }}
           animate={{ opacity: 1, x: 0, scale: 1 }}
           exit={{ opacity: 0, scale: 0.9, transition: { duration: 0.2 } }}
-          className={`absolute ${bubbleOnRight ? 'left-[75px]' : 'right-[75px]'} top-[-10px] w-max max-w-[220px] bg-white dark:bg-[#27272a] border border-gray-200 dark:border-[#262626] shadow-lg rounded-xl p-4 pointer-events-none ${bubbleOnRight ? 'origin-left' : 'origin-right'}`}
+          className={`absolute ${bubbleOnRight ? 'left-[75px]' : 'right-[75px]'} top-[-10px] w-max max-w-[180px] sm:max-w-[220px] bg-white dark:bg-[#27272a] border border-gray-200 dark:border-[#262626] shadow-lg rounded-xl p-4 pointer-events-none ${bubbleOnRight ? 'origin-left' : 'origin-right'}`}
         >
-          <p className="text-sm text-gray-700 dark:text-zinc-300 italic text-center font-medium">
+          <p className="text-xs sm:text-sm text-gray-700 dark:text-zinc-300 text-center font-medium leading-relaxed">
             "{currentQuote}"
           </p>
           {/* Little arrow pointing at the ghost */}

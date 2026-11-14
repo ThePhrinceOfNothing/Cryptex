@@ -145,7 +145,7 @@ export const Settings: React.FC = () => {
         message="WARNING: Importing a vault backup will overwrite all current data. Are you sure you want to proceed?"
         confirmText="Overwrite Data"
       />
-      <div className="max-w-3xl mx-auto p-8 h-full bg-white dark:bg-[#141414] flex flex-col overflow-y-auto">
+      <div className="max-w-3xl mx-auto p-8 h-full bg-white dark:bg-[#141416] flex flex-col overflow-y-auto">
       <div className="mb-10 shrink-0">
         <h1 className="text-2xl font-semibold text-gray-900 dark:text-zinc-100 tracking-tight flex items-center gap-2">
           <SettingsIcon className="text-accent w-6 h-6" strokeWidth={1.5} />
@@ -161,7 +161,7 @@ export const Settings: React.FC = () => {
             <User className="w-4 h-4 text-gray-400" strokeWidth={2} />
             Workspace & Profile
           </div>
-          <div className="bg-white dark:bg-[#141414] border border-zinc-200 rounded-xl p-6 shadow-sm">
+          <div className="bg-white dark:bg-[#141416] border border-gray-200 dark:border-[#262626] rounded-xl p-6 shadow-sm">
             <div className="flex items-center gap-6 mb-8">
               <div className="w-16 h-16 rounded-full bg-accent/10 border border-accent/20 flex items-center justify-center text-accent shrink-0 overflow-hidden shadow-sm">
                 {settings.avatarBase64 ? (
@@ -198,7 +198,7 @@ export const Settings: React.FC = () => {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
               <div>
                 <label className="block text-xs font-semibold text-gray-700 dark:text-zinc-300 uppercase tracking-wider mb-2">Workspace Name</label>
                 <input
@@ -206,7 +206,7 @@ export const Settings: React.FC = () => {
                   value={workspaceName}
                   onChange={(e) => setWorkspaceName(e.target.value)}
                   onBlur={() => handleUpdate({ workspaceName })}
-                  className="w-full bg-gray-50 dark:bg-[#1e1e1e] border border-zinc-200 rounded-md px-3 py-2 text-gray-900 dark:text-zinc-100 text-sm focus:bg-white dark:bg-[#141414] focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all focus:border-accent"
+                  className="w-full bg-gray-50 dark:bg-[#1e1e1e] border border-zinc-200 rounded-md px-3 py-2 text-gray-900 dark:text-zinc-100 text-sm focus:bg-white dark:bg-[#141416] focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all focus:border-accent"
                 />
               </div>
               <div>
@@ -216,7 +216,7 @@ export const Settings: React.FC = () => {
                   value={subtitle}
                   onChange={(e) => setSubtitle(e.target.value)}
                   onBlur={() => handleUpdate({ subtitle })}
-                  className="w-full bg-gray-50 dark:bg-[#1e1e1e] border border-zinc-200 rounded-md px-3 py-2 text-gray-900 dark:text-zinc-100 text-sm focus:bg-white dark:bg-[#141414] focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all focus:border-accent"
+                  className="w-full bg-gray-50 dark:bg-[#1e1e1e] border border-zinc-200 rounded-md px-3 py-2 text-gray-900 dark:text-zinc-100 text-sm focus:bg-white dark:bg-[#141416] focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all focus:border-accent"
                 />
               </div>
             </div>
@@ -230,7 +230,7 @@ export const Settings: React.FC = () => {
             <Palette className="w-4 h-4 text-gray-400" strokeWidth={2} />
             Appearance & Preferences
           </div>
-          <div className="bg-white dark:bg-[#141414] border border-zinc-200 dark:border-[#262626] rounded-xl p-6 shadow-sm space-y-6">
+          <div className="bg-white dark:bg-[#141416] border border-zinc-200 dark:border-[#262626] rounded-xl p-6 shadow-sm space-y-6">
             <div className="flex items-center justify-between">
               <div>
                 <h4 className="text-sm font-medium text-gray-900 dark:text-zinc-100">Application Theme</h4>
@@ -241,7 +241,7 @@ export const Settings: React.FC = () => {
                 onChange={(e) => {
                   handleUpdate({ theme: e.target.value as VaultSettings['theme'] });
                 }}
-                className="bg-gray-50 dark:bg-[#1e1e1e] border border-zinc-200 rounded-md px-3 py-2 text-gray-900 dark:text-zinc-100 text-sm focus:bg-white dark:bg-[#141414] focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all focus:border-accent w-32 w-32"
+                className="bg-gray-50 dark:bg-[#1e1e1e] border border-zinc-200 rounded-md px-3 py-2 text-gray-900 dark:text-zinc-100 text-sm focus:bg-white dark:bg-[#141416] focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all focus:border-accent w-32"
               >
                 <option value="light">Light Mode</option>
                 <option value="dark">Dark Mode</option>
@@ -289,7 +289,7 @@ export const Settings: React.FC = () => {
                   setFontSize(e.target.value as VaultSettings['fontSize']);
                   handleUpdate({ fontSize: e.target.value as VaultSettings['fontSize'] });
                 }}
-                className="bg-gray-50 dark:bg-[#1e1e1e] border border-zinc-200 rounded-md px-3 py-2 text-gray-900 dark:text-zinc-100 text-sm focus:bg-white dark:bg-[#141414] focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all focus:border-accent w-32"
+                className="bg-gray-50 dark:bg-[#1e1e1e] border border-zinc-200 rounded-md px-3 py-2 text-gray-900 dark:text-zinc-100 text-sm focus:bg-white dark:bg-[#141416] focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all focus:border-accent w-32"
               >
                 <option value="Small">Small</option>
                 <option value="Default">Default</option>
@@ -307,7 +307,7 @@ export const Settings: React.FC = () => {
                 <select
                   value={vaultData?.settings?.ghostBehavior || 'random'}
                   onChange={(e) => handleUpdate({ ghostBehavior: e.target.value as VaultSettings['ghostBehavior'] })}
-                  className="bg-gray-50 dark:bg-[#1e1e1e] border border-zinc-200 rounded-md px-3 py-2 text-gray-900 dark:text-zinc-100 text-sm focus:bg-white dark:bg-[#141414] focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all focus:border-accent w-32"
+                  className="bg-gray-50 dark:bg-[#1e1e1e] border border-zinc-200 rounded-md px-3 py-2 text-gray-900 dark:text-zinc-100 text-sm focus:bg-white dark:bg-[#141416] focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all focus:border-accent w-32"
                 >
                   <option value="random">Random Spawns</option>
                   <option value="fixed">Fixed Position</option>
@@ -326,7 +326,7 @@ export const Settings: React.FC = () => {
                   setUiDensity(e.target.value as VaultSettings['uiDensity']);
                   handleUpdate({ uiDensity: e.target.value as VaultSettings['uiDensity'] });
                 }}
-                className="bg-gray-50 dark:bg-[#1e1e1e] border border-zinc-200 rounded-md px-3 py-2 text-gray-900 dark:text-zinc-100 text-sm focus:bg-white dark:bg-[#141414] focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all focus:border-accent w-32"
+                className="bg-gray-50 dark:bg-[#1e1e1e] border border-zinc-200 rounded-md px-3 py-2 text-gray-900 dark:text-zinc-100 text-sm focus:bg-white dark:bg-[#141416] focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all focus:border-accent w-32"
               >
                 <option value="Comfortable">Comfortable</option>
                 <option value="Compact">Compact</option>
@@ -346,7 +346,7 @@ export const Settings: React.FC = () => {
                   setCurrency(e.target.value as VaultSettings['currency']);
                   handleUpdate({ currency: e.target.value as VaultSettings['currency'] });
                 }}
-                className="bg-gray-50 dark:bg-[#1e1e1e] border border-zinc-200 rounded-md px-3 py-2 text-gray-900 dark:text-zinc-100 text-sm focus:bg-white dark:bg-[#141414] focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all focus:border-accent w-32"
+                className="bg-gray-50 dark:bg-[#1e1e1e] border border-zinc-200 rounded-md px-3 py-2 text-gray-900 dark:text-zinc-100 text-sm focus:bg-white dark:bg-[#141416] focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all focus:border-accent w-32"
               >
                 <option value="USD">USD ($)</option>
                 <option value="PHP">PHP (₱)</option>
@@ -367,7 +367,7 @@ export const Settings: React.FC = () => {
             <Shield className="w-4 h-4 text-gray-400" strokeWidth={2} />
             Security
           </div>
-          <div className="bg-white dark:bg-[#141414] border border-zinc-200 rounded-xl p-6 shadow-sm space-y-6">
+          <div className="bg-white dark:bg-[#141416] border border-gray-200 dark:border-[#262626] rounded-xl p-6 shadow-sm space-y-6">
             <div className="flex items-center justify-between">
               <div>
                 <h4 className="text-sm font-medium text-gray-900 dark:text-zinc-100">Auto-Lock Timer</h4>
@@ -379,7 +379,7 @@ export const Settings: React.FC = () => {
                   setAutoLockTimer(e.target.value as VaultSettings['autoLockTimer']);
                   handleUpdate({ autoLockTimer: e.target.value as VaultSettings['autoLockTimer'] });
                 }}
-                className="bg-gray-50 dark:bg-[#1e1e1e] border border-zinc-200 rounded-md px-3 py-2 text-gray-900 dark:text-zinc-100 text-sm focus:bg-white dark:bg-[#141414] focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all focus:border-accent w-32"
+                className="bg-gray-50 dark:bg-[#1e1e1e] border border-zinc-200 rounded-md px-3 py-2 text-gray-900 dark:text-zinc-100 text-sm focus:bg-white dark:bg-[#141416] focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all focus:border-accent w-32"
               >
                 <option value="1 min">1 min</option>
                 <option value="5 min">5 min</option>
@@ -399,7 +399,7 @@ export const Settings: React.FC = () => {
                 onClick={() => setIsPasswordModalOpen(true)}
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.97 }}
-                className="px-4 py-2 border border-zinc-200 hover:border-gray-300 dark:border-white/20 bg-gray-50 dark:bg-[#1e1e1e] hover:bg-white dark:bg-[#141414] text-gray-700 dark:text-zinc-300 text-sm font-medium rounded-md transition-colors flex items-center gap-2 shadow-sm"
+                className="px-4 py-2 border border-zinc-200 hover:border-gray-300 dark:border-white/20 bg-gray-50 dark:bg-[#1e1e1e] hover:bg-white dark:bg-[#141416] text-gray-700 dark:text-zinc-300 text-sm font-medium rounded-md transition-colors flex items-center gap-2 shadow-sm"
               >
                 <KeyRound className="w-4 h-4" />
                 Change Password
@@ -414,7 +414,7 @@ export const Settings: React.FC = () => {
             <Info className="w-4 h-4 text-gray-400" strokeWidth={2} />
             App Info
           </div>
-          <div className="bg-white dark:bg-[#141414] border border-zinc-200 rounded-xl p-6 shadow-sm">
+          <div className="bg-white dark:bg-[#141416] border border-gray-200 dark:border-[#262626] rounded-xl p-6 shadow-sm">
             <h4 className="text-sm font-medium text-gray-900 dark:text-zinc-100">Cryptex</h4>
             <p className="text-xs text-gray-500 dark:text-zinc-500 mt-0.5">Version {appVersion} • Local-First Architecture</p>
           </div>
@@ -426,7 +426,7 @@ export const Settings: React.FC = () => {
             <Database className="w-4 h-4 text-gray-400" strokeWidth={2} />
             Data & Backup
           </div>
-          <div className="bg-white dark:bg-[#141414] border border-zinc-200 rounded-xl p-6 shadow-sm space-y-6">
+          <div className="bg-white dark:bg-[#141416] border border-gray-200 dark:border-[#262626] rounded-xl p-6 shadow-sm space-y-6">
             <div className="flex flex-col gap-3">
               <h4 className="text-sm font-medium text-gray-900 dark:text-zinc-100">Backup & Restore</h4>
               <p className="text-xs text-gray-500 dark:text-zinc-500">Download a highly encrypted `.vault` archive, or restore an existing backup to replace your current vault.</p>
@@ -457,7 +457,7 @@ export const Settings: React.FC = () => {
                 />
                 <label 
                   htmlFor="vault-upload"
-                  className="cursor-pointer px-4 py-2.5 bg-white dark:bg-[#141414] border border-gray-200 dark:border-[#262626] hover:border-accent hover:text-accent text-gray-700 dark:text-zinc-300 text-sm font-medium rounded-md transition-all flex items-center gap-2 shadow-sm"
+                  className="cursor-pointer px-4 py-2.5 bg-white dark:bg-[#141416] border border-gray-200 dark:border-[#262626] hover:border-accent hover:text-accent text-gray-700 dark:text-zinc-300 text-sm font-medium rounded-md transition-all flex items-center gap-2 shadow-sm"
                 >
                   <Upload className="w-4 h-4" />
                   Import Backup
@@ -477,7 +477,7 @@ export const Settings: React.FC = () => {
                   onClick={() => setIsEraseModalOpen(true)}
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.97 }}
-                  className="px-4 py-2.5 bg-white dark:bg-[#141414] border border-red-200 hover:border-red-300 hover:bg-red-50 text-red-600 text-sm font-medium rounded-md transition-colors flex items-center gap-2 shadow-sm inline-flex"
+                  className="px-4 py-2.5 bg-white dark:bg-[#141416] border border-red-200 hover:border-red-300 hover:bg-red-50 text-red-600 text-sm font-medium rounded-md transition-colors flex items-center gap-2 shadow-sm inline-flex"
                 >
                   <Trash2 className="w-4 h-4" />
                   Erase Vault & Reset App
@@ -495,7 +495,7 @@ export const Settings: React.FC = () => {
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="bg-white dark:bg-[#141414] rounded-xl shadow-xl p-8 max-w-md w-full border border-zinc-200"
+              className="bg-white dark:bg-[#141416] rounded-xl shadow-xl p-8 max-w-md w-full border border-zinc-200"
             >
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-lg font-semibold text-gray-900 dark:text-zinc-100">Change Master Password</h2>
@@ -517,7 +517,7 @@ export const Settings: React.FC = () => {
                       type="password"
                       value={newPassword}
                       onChange={(e) => setNewPassword(e.target.value)}
-                      className="w-full bg-gray-50 dark:bg-[#1e1e1e] border border-zinc-200 rounded-md px-3 py-2 text-gray-900 dark:text-zinc-100 text-sm focus:bg-white dark:bg-[#141414] focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all focus:border-accent"
+                      className="w-full bg-gray-50 dark:bg-[#1e1e1e] border border-zinc-200 rounded-md px-3 py-2 text-gray-900 dark:text-zinc-100 text-sm focus:bg-white dark:bg-[#141416] focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all focus:border-accent"
                     />
                   </div>
                   <div>
@@ -526,7 +526,7 @@ export const Settings: React.FC = () => {
                       type="password"
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
-                      className="w-full bg-gray-50 dark:bg-[#1e1e1e] border border-zinc-200 rounded-md px-3 py-2 text-gray-900 dark:text-zinc-100 text-sm focus:bg-white dark:bg-[#141414] focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all focus:border-accent"
+                      className="w-full bg-gray-50 dark:bg-[#1e1e1e] border border-zinc-200 rounded-md px-3 py-2 text-gray-900 dark:text-zinc-100 text-sm focus:bg-white dark:bg-[#141416] focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all focus:border-accent"
                     />
                   </div>
 
