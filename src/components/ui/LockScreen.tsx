@@ -143,7 +143,30 @@ export const LockScreen: React.FC = () => {
 
   // Initial setup stepper if no vault exists yet
   if (!hasVault) {
-    return <OnboardingStepper onComplete={handleStepperComplete} />;
+    return (
+      <OnboardingStepper
+        onComplete={handleStepperComplete}
+        onRestore={async () => {
+          try {
+            const config = await loadAppConfig();
+            if (config) {
+              setAppConfig(config);
+              if (config.accentColor) {
+                document.documentElement.style.setProperty('--color-accent', config.accentColor);
+              }
+              if (config.theme === 'dark') {
+                document.documentElement.classList.add('dark');
+              } else {
+                document.documentElement.classList.remove('dark');
+              }
+            }
+          } catch (e) {
+            console.error('Failed to load restored config:', e);
+          }
+          setHasVault(true);
+        }}
+      />
+    );
   }
 
   return (

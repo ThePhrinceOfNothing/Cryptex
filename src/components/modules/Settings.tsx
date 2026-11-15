@@ -255,7 +255,7 @@ export const Settings: React.FC = () => {
               </div>
               <div className="flex items-center gap-2">
                 {[
-                  { name: 'Cryptex Blue', hex: '#008EFF' },
+                  { name: 'Tectoryx Blue', hex: '#008EFF' },
                   { name: 'Matrix Green', hex: '#10B981' },
                   { name: 'Synthwave Pink', hex: '#EC4899' },
                   { name: 'Cyberpunk Yellow', hex: '#F59E0B' },
@@ -415,7 +415,7 @@ export const Settings: React.FC = () => {
             App Info
           </div>
           <div className="bg-white dark:bg-[#141416] border border-gray-200 dark:border-[#262626] rounded-xl p-6 shadow-sm">
-            <h4 className="text-sm font-medium text-gray-900 dark:text-zinc-100">Cryptex</h4>
+            <h4 className="text-sm font-medium text-gray-900 dark:text-zinc-100">Tectoryx</h4>
             <p className="text-xs text-gray-500 dark:text-zinc-500 mt-0.5">Version {appVersion} • Local-First Architecture</p>
           </div>
         </section>

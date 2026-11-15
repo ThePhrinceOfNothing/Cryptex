@@ -9,6 +9,36 @@ pub struct EncryptedVault {
     ciphertext: String,
 }
 
+fn migrate_legacy_data(target_dir: &PathBuf) {
+    if let Some(parent_dir) = target_dir.parent() {
+        let legacy_dirs = ["com.cryptex.app", "Cryptex", "com.enclave.app", "Enclave"];
+
+        // 1. Migrate data.vault if target does not have it
+        let target_vault = target_dir.join("data.vault");
+        if !target_vault.exists() {
+            for legacy in &legacy_dirs {
+                let legacy_vault = parent_dir.join(legacy).join("data.vault");
+                if legacy_vault.exists() {
+                    let _ = fs::copy(&legacy_vault, &target_vault);
+                    break;
+                }
+            }
+        }
+
+        // 2. Migrate app-config.json if target does not have it
+        let target_config = target_dir.join("app-config.json");
+        if !target_config.exists() {
+            for legacy in &legacy_dirs {
+                let legacy_config = parent_dir.join(legacy).join("app-config.json");
+                if legacy_config.exists() {
+                    let _ = fs::copy(&legacy_config, &target_config);
+                    break;
+                }
+            }
+        }
+    }
+}
+
 fn get_vault_path(app: &AppHandle) -> Result<PathBuf, String> {
     let mut path = app
         .path()
@@ -18,6 +48,8 @@ fn get_vault_path(app: &AppHandle) -> Result<PathBuf, String> {
     if !path.exists() {
         fs::create_dir_all(&path).map_err(|e| e.to_string())?;
     }
+
+    migrate_legacy_data(&path);
 
     path.push("data.vault");
     Ok(path)
@@ -78,6 +110,8 @@ fn get_config_path(app: &AppHandle) -> Result<PathBuf, String> {
     if !path.exists() {
         fs::create_dir_all(&path).map_err(|e| e.to_string())?;
     }
+
+    migrate_legacy_data(&path);
 
     path.push("app-config.json");
     Ok(path)
