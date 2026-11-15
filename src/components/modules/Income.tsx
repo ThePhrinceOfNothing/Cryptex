@@ -5,6 +5,8 @@ import type { Transaction, TransactionSplit } from '../../lib/vault';
 import { ConfirmModal } from '../modals/ConfirmModal';
 import { motion, AnimatePresence } from 'framer-motion';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart as RePieChart, Pie, Cell } from 'recharts';
+import { playCoinClink } from '../../lib/soundEngine';
+import { addExperience, unlockBadge } from '../../lib/gamification';
 
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316'];
 
@@ -295,10 +297,21 @@ export const Income: React.FC = () => {
             tx={editingTx}
             curr={curr}
             onSave={async (newTx) => {
+              playCoinClink();
               if (editingTx) {
                 await updateVaultData({ transactions: transactions.map(t => t.id === newTx.id ? newTx : t) });
               } else {
-                await updateVaultData({ transactions: [...transactions, newTx] });
+                const updatedTxs = [...transactions, newTx];
+                let gamificationState = vaultData?.gamification;
+                if (updatedTxs.length >= 25) {
+                  const badgeRes = unlockBadge(gamificationState, 'coin_hoarder');
+                  gamificationState = badgeRes.newState;
+                }
+                const xpResult = addExperience(gamificationState, 10, vaultData?.settings?.soundEnabled ?? true);
+                await updateVaultData({ 
+                  transactions: updatedTxs,
+                  gamification: xpResult.newState
+                });
               }
               setIsModalOpen(false);
               setEditingTx(null);

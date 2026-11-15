@@ -22,6 +22,39 @@ export interface VaultSettings {
   accentColor?: string;
   ghostBehavior?: 'random' | 'fixed' | 'draggable';
   lastSeenVersion?: string;
+  terminalHackerTheme?: 'none' | 'green' | 'amber';
+  soundEnabled?: boolean;
+  soundVolume?: number;
+  ambienceTrack?: 'none' | 'rain' | 'campfire' | 'clock' | 'whitenoise';
+  ambienceVolume?: number;
+  decoyEnabled?: boolean;
+  decoyPassword?: string;
+}
+
+export type PetEvolution = 'ghost' | 'owl' | 'fox' | 'gargoyle';
+export type PetAccessory = 'none' | 'monocle' | 'crown' | 'headphones' | 'detective';
+
+export interface PetGamificationState {
+  xp: number;
+  level: number;
+  evolution: PetEvolution;
+  accessory: PetAccessory;
+  unlockedBadges: string[];
+  lastDailyStreak?: string;
+  streakDays?: number;
+}
+
+export interface MoodLogEntry {
+  rating: number; // 1 to 5
+  mood: string;   // e.g. "Focused", "Calm", "Tired", "Energetic", "Stressed"
+  note?: string;
+  timestamp: number;
+}
+
+export interface ScratchpadItem {
+  id: string;
+  content: string;
+  createdAt: number;
 }
 
 export interface CredentialFolder {
@@ -85,6 +118,9 @@ export interface VaultData {
   events?: CalendarEvent[];
   settings?: VaultSettings;
   activityLog?: Record<string, number>; // YYYY-MM-DD -> count
+  gamification?: PetGamificationState;
+  moodLogs?: Record<string, MoodLogEntry>;
+  scratchpad?: ScratchpadItem[];
 }
 
 export interface Note {
@@ -93,6 +129,9 @@ export interface Note {
   content: string;
   updatedAt: number;
   folderId?: string;
+  burnAfterReading?: boolean;
+  burnExpiresAt?: number;
+  timeCapsuleUnlockDate?: string;
 }
 
 export interface TransactionSplit {

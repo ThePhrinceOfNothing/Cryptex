@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import type { ReactNode } from 'react';
 import { saveVaultWithKey } from '../lib/vault';
 import type { VaultData } from '../lib/vault';
@@ -22,10 +22,13 @@ export const VaultProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   const [cryptoKey, setCryptoKey] = useState<CryptoKey | null>(null);
   const [salt, setSalt] = useState<Uint8Array | null>(null);
   const [lockCountdown, setLockCountdown] = useState<number | null>(null);
+  const vaultDataRef = useRef<VaultData | null>(null);
+  vaultDataRef.current = vaultData;
 
   // Auto-lock timer logic
   const lockVault = useCallback(() => {
     setIsLocked(true);
+    vaultDataRef.current = null;
     setVaultData(null);
     setCryptoKey(null);
     setSalt(null);
@@ -99,6 +102,7 @@ export const VaultProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   const unlockVault = async (key: CryptoKey, keySalt: Uint8Array, data: VaultData) => {
     setCryptoKey(key);
     setSalt(keySalt);
+    vaultDataRef.current = data;
     setVaultData(data);
     setIsLocked(false);
 
@@ -121,22 +125,31 @@ export const VaultProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   };
 
   const updateVaultData = async (newData: Partial<VaultData>) => {
-    if (isLocked || !vaultData || !cryptoKey || !salt) {
+    const current = vaultDataRef.current || vaultData;
+    if (isLocked || !current || !cryptoKey || !salt) {
       throw new Error("Vault is locked or missing keys");
     }
     
     // Auto-log activity for the dashboard heatmap
     const today = new Date().toISOString().split('T')[0];
-    const activityLog = { ...(vaultData.activityLog || {}) };
+    const activityLog = { ...(current.activityLog || {}) };
     // Only increment if we aren't explicitly updating settings to prevent 
     // visual tweaks from counting as meaningful "work" activity
     if (!newData.settings) {
       activityLog[today] = (activityLog[today] || 0) + 1;
     }
     
-    const updatedData = { ...vaultData, activityLog, ...newData };
+    const updatedData: VaultData = {
+      ...current,
+      ...newData,
+      activityLog,
+      settings: newData.settings
+        ? { ...(current.settings || ({} as any)), ...newData.settings }
+        : current.settings,
+    };
     
     // Optimistic update in RAM
+    vaultDataRef.current = updatedData;
     setVaultData(updatedData);
 
     // Persist to file system natively via Tauri

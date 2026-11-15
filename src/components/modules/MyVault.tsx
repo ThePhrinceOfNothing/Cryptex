@@ -578,7 +578,7 @@ export const MyVaultDetails: React.FC<MyVaultDetailsProps> = ({
           setPassword(pwd);
         }}
       />
-      <div className="h-full flex flex-col p-4 sm:p-6 lg:p-8 max-w-3xl mx-auto w-full overflow-y-auto">
+      <div className="h-full flex flex-col p-4 sm:p-6 lg:p-8 w-full overflow-y-auto">
         <div className="flex justify-between items-start mb-6 shrink-0">
           <div>
             <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white tracking-tight">

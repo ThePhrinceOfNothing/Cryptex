@@ -1,0 +1,23 @@
+# Changelog
+
+All notable changes to Tectoryx are documented in this file.
+
+## [1.5.2] - 2026-11-15
+
+### Added
+- **Custom Native Title Bar:** Frameless window with native borderless drop shadow, draggable title bar, double-click maximize/restore, and custom minimize, maximize, and close controls.
+- **Desktop Window Hygiene:** Blocked accidental F5/Ctrl+R browser reloads to protect decrypted vault state in RAM; suppressed default Chromium context menus on non-input chrome; prevented accidental file-drop navigation.
+- **Global Selection Protection:** Added desktop UI text-selection prevention across cards, toolbars, and buttons while preserving selectable text in notes and inputs.
+- **Focus Ambience Generator:** Procedural Web Audio API synthesizer with presets for Heavy Rain, Campfire crackle, Clock tick, and White noise.
+- **PNG Steganography Tool:** Encrypt and embed confidential messages into lossless PNG carrier images with LSB decoding.
+- **Global Scratchpad:** Quick-capture scratchpad overlay for fleeting thoughts with one-click conversion to tasks or encrypted notes.
+- **Note Constellation Graph:** Interactive knowledge constellation connecting linked notes with tag filters and direct editor access.
+
+### Changed
+- **Unconstrained Desktop Panels:** Removed artificial 768px web constraints (`max-w-3xl`) across Calendar, Notes Editor, My Vault Detail, and Settings to leverage widescreen monitors.
+- **Lock Screen De-Slop:** Removed filler status badges, horizontal dividing lines, workspace name redundancy, and technical buzzwords in favor of a clean, centered desktop unlock hub.
+- **Dashboard Cleanup:** Removed redundant digital clock header widget; renamed achievement categories to clean Milestones.
+
+### Fixed
+- **Terminal Hacker Mode Persistence:** Resolved React state closure race condition that caused CRT phosphor themes to flash and revert immediately upon selection.
+- **Atomic Settings Updates:** Unified setting changes with gamification badge unlocks in a single atomic update.

@@ -5,11 +5,37 @@ import { getVersion } from '@tauri-apps/api/app';
 import { CheckCircle2, ChevronDown } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 
+const LOCAL_RELEASE_NOTES: Record<string, string> = {
+  '1.5.2': `### What's New in Tectoryx v1.5.2
+
+#### Custom Native Title Bar
+- Integrated frameless window with native borderless drop shadow.
+- Custom minimize, maximize/restore, and close buttons matching Windows OS conventions.
+- Native window dragging and double-click to maximize/restore.
+
+#### Design Polish & De-Slop
+- Cleaned up Lock Screen: removed all pseudo-hacker labels, dividing lines, and technical buzzwords.
+- Unconstrained desktop panels across Calendar, Notes, My Vault, and Settings to make full use of widescreen displays.
+- Removed redundant digital clock and cleaned up dashboard milestone badges.
+
+#### System & Performance Hygiene
+- Fixed Terminal Hacker Mode CRT persistence and race conditions.
+- Prevented accidental F5/Ctrl+R browser reloads that dump decrypted vault RAM.
+- Suppressed browser context menus and accidental file-drop navigation.
+- Global UI text-selection prevention on desktop chrome.
+
+#### Secret Agent & Focus Utilities
+- Procedural audio ambience synth (Rain, Campfire, Clock tick, White noise).
+- Steganography encoder/decoder for encrypted PNG payloads.
+- Quick-Capture Scratchpad with direct note and task conversion.
+- Note Constellation knowledge graph view.`,
+};
+
 export const UpdateLogsModal: React.FC = () => {
   const { vaultData, updateVaultData } = useVault();
   const [isOpen, setIsOpen] = useState(false);
   const [currentVersion, setCurrentVersion] = useState<string | null>(null);
-  const [hasScrolledToBottom, setHasScrolledToBottom] = useState(true);
+  const [hasScrolledToBottom, setHasScrolledToBottom] = useState(false);
   const [markdownLogs, setMarkdownLogs] = useState<string | null>(null);
   const [isLoadingLogs, setIsLoadingLogs] = useState(false);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -28,27 +54,27 @@ export const UpdateLogsModal: React.FC = () => {
           setIsLoadingLogs(true);
           
           try {
-            // Check GitHub API for release notes. Try with 'v' prefix first (e.g., v1.1.8)
-            let res = await fetch(`https://api.github.com/repos/ThePhrinceOfNothing/Cryptex/releases/tags/v${version}`);
-            
-            // If the specific tag isn't found, try without 'v'
-            if (!res.ok) {
-              res = await fetch(`https://api.github.com/repos/ThePhrinceOfNothing/Cryptex/releases/tags/${version}`);
-            }
-            
-            // If still not found, try getting the absolute latest release as a fallback
-            if (!res.ok) {
-              res = await fetch(`https://api.github.com/repos/ThePhrinceOfNothing/Cryptex/releases/latest`);
-            }
-
-            if (res.ok) {
-              const data = await res.json();
-              setMarkdownLogs(data.body);
+            if (LOCAL_RELEASE_NOTES[version]) {
+              setMarkdownLogs(LOCAL_RELEASE_NOTES[version]);
             } else {
-              setMarkdownLogs(`## Welcome to Cryptex v${version}!\n\nRelease notes are not yet available on GitHub for this version. Please check back later or visit the repository directly.`);
+              // Check GitHub API for release notes
+              let res = await fetch(`https://api.github.com/repos/ThePhrinceOfNothing/Cryptex/releases/tags/v${version}`);
+              if (!res.ok) {
+                res = await fetch(`https://api.github.com/repos/ThePhrinceOfNothing/Cryptex/releases/tags/${version}`);
+              }
+              if (!res.ok) {
+                res = await fetch(`https://api.github.com/repos/ThePhrinceOfNothing/Cryptex/releases/latest`);
+              }
+
+              if (res.ok) {
+                const data = await res.json();
+                setMarkdownLogs(data.body || `### Tectoryx v${version}\n\nThis release includes security enhancements, bug fixes, and design refinements.`);
+              } else {
+                setMarkdownLogs(`### Tectoryx v${version}\n\nThis release includes security enhancements, bug fixes, and design refinements.`);
+              }
             }
-          } catch (err) {
-            setMarkdownLogs(`## Welcome to Cryptex v${version}!\n\nFailed to fetch release notes from GitHub. Please check your internet connection.`);
+          } catch {
+            setMarkdownLogs(LOCAL_RELEASE_NOTES[version] || `### Tectoryx v${version}\n\nThis release includes security enhancements, bug fixes, and design refinements.`);
           } finally {
             setIsLoadingLogs(false);
           }
@@ -61,12 +87,25 @@ export const UpdateLogsModal: React.FC = () => {
     checkVersion();
   }, [vaultData?.settings?.lastSeenVersion]);
 
+  // Check if content fits without scrolling
+  useEffect(() => {
+    if (!isOpen || isLoadingLogs) return;
+    const checkFit = () => {
+      if (scrollContainerRef.current) {
+        const { scrollHeight, clientHeight } = scrollContainerRef.current;
+        if (scrollHeight <= clientHeight + 30) {
+          setHasScrolledToBottom(true);
+        }
+      }
+    };
+    const t = setTimeout(checkFit, 100);
+    return () => clearTimeout(t);
+  }, [isOpen, isLoadingLogs, markdownLogs]);
+
   const handleScroll = () => {
     if (!scrollContainerRef.current || hasScrolledToBottom) return;
-    
     const { scrollTop, scrollHeight, clientHeight } = scrollContainerRef.current;
-    // Allow a small 10px threshold to account for rounding errors in scroll calculations
-    if (scrollTop + clientHeight >= scrollHeight - 10) {
+    if (scrollTop + clientHeight >= scrollHeight - 20) {
       setHasScrolledToBottom(true);
     }
   };
@@ -98,23 +137,23 @@ export const UpdateLogsModal: React.FC = () => {
   return (
     <AnimatePresence>
       {isOpen && (
-        <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 sm:p-6 bg-black/60 backdrop-blur-sm">
+        <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 sm:p-6 bg-black/60 backdrop-blur-sm">
           <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: 10 }}
+            initial={{ opacity: 0, scale: 0.96, y: 8 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: 10 }}
-            transition={{ type: "spring", duration: 0.5 }}
-            className="w-full max-w-2xl bg-white dark:bg-[#141414] border border-gray-200 dark:border-[#262626] rounded-xl shadow-2xl flex flex-col overflow-hidden max-h-[85vh]"
+            exit={{ opacity: 0, scale: 0.96, y: 8 }}
+            transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
+            className="w-full max-w-xl bg-white dark:bg-[#121214] border border-gray-200 dark:border-[#27272a] rounded-xl shadow-2xl flex flex-col overflow-hidden max-h-[80vh]"
           >
             {/* Header */}
-            <div className="flex-shrink-0 px-6 py-5 border-b border-gray-100 dark:border-[#262626] bg-gray-50/50 dark:bg-black/20">
+            <div className="flex-shrink-0 px-6 py-4 border-b border-gray-100 dark:border-white/5 bg-gray-50/50 dark:bg-[#18181b]/50">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-accent/10 flex items-center justify-center">
-                  <CheckCircle2 className="w-5 h-5 text-accent" strokeWidth={2} />
+                <div className="w-9 h-9 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 flex items-center justify-center shrink-0">
+                  <CheckCircle2 size={18} strokeWidth={1.75} />
                 </div>
                 <div>
-                  <h2 className="text-xl font-bold text-gray-900 dark:text-white">Update Successful!</h2>
-                  <p className="text-sm text-gray-500 dark:text-zinc-400 font-medium">Welcome to Cryptex v{currentVersion}</p>
+                  <h2 className="text-base font-semibold text-gray-900 dark:text-white tracking-tight">Update Installed</h2>
+                  <p className="text-xs text-gray-500 dark:text-zinc-400 font-medium">Welcome to Tectoryx v{currentVersion}</p>
                 </div>
               </div>
             </div>
@@ -123,47 +162,41 @@ export const UpdateLogsModal: React.FC = () => {
             <div 
               ref={scrollContainerRef}
               onScroll={handleScroll}
-              className="flex-1 overflow-y-auto p-6 custom-scrollbar"
+              className="flex-1 overflow-y-auto px-6 py-5 custom-scrollbar"
             >
-              <div className="prose prose-sm dark:prose-invert max-w-none">
+              <div className="prose prose-sm dark:prose-invert max-w-none text-xs sm:text-sm leading-relaxed text-gray-700 dark:text-zinc-300">
                 {isLoadingLogs ? (
-                  <div className="flex justify-center py-10">
-                    <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-accent"></div>
+                  <div className="flex items-center justify-center py-12">
+                    <div className="animate-spin rounded-full h-6 w-6 border-2 border-zinc-700 border-t-zinc-300" />
                   </div>
                 ) : (
                   <ReactMarkdown>{markdownLogs || ''}</ReactMarkdown>
                 )}
-                
-                {/* Extra spacing to ensure scrolling is required */}
-                <div className="h-12 border-t border-dashed border-gray-200 dark:border-[#262626] mt-8 pt-8 flex items-center justify-center text-sm text-gray-400 dark:text-zinc-600 font-medium">
-                  End of Release Notes
-                </div>
               </div>
             </div>
 
             {/* Footer / Actions */}
-            <div className="flex-shrink-0 px-6 py-4 border-t border-gray-100 dark:border-[#262626] bg-white dark:bg-[#0c0c0e] flex flex-col sm:flex-row items-center justify-between gap-4">
-              <div className="text-xs text-gray-500 dark:text-zinc-500 flex items-center gap-1.5">
-                {!hasScrolledToBottom && (
-                  <motion.div
-                    animate={{ y: [0, 3, 0] }}
-                    transition={{ repeat: Infinity, duration: 1.5 }}
-                  >
-                    <ChevronDown size={14} className="text-accent" />
-                  </motion.div>
+            <div className="flex-shrink-0 px-6 py-3.5 border-t border-gray-100 dark:border-white/5 bg-gray-50/50 dark:bg-[#18181b]/50 flex items-center justify-between gap-4">
+              <div className="text-[11px] text-gray-500 dark:text-zinc-400 flex items-center gap-1.5">
+                {!hasScrolledToBottom ? (
+                  <div className="flex items-center gap-1 text-zinc-500">
+                    <ChevronDown size={13} strokeWidth={1.75} className="animate-bounce" />
+                    <span>Scroll to review notes</span>
+                  </div>
+                ) : (
+                  <span className="tabular-nums font-mono text-[10px] uppercase tracking-wider text-zinc-500">v{currentVersion}</span>
                 )}
-                'Welcome to the new update.'
               </div>
               <button
                 onClick={handleClose}
                 disabled={!hasScrolledToBottom}
-                className={`w-full sm:w-auto px-6 py-2.5 rounded-lg font-medium transition-all flex items-center justify-center gap-2 ${
+                className={`px-4 py-2 text-xs sm:text-sm font-medium rounded-lg transition-colors shadow-2xs active:scale-[0.98] ${
                   hasScrolledToBottom 
-                    ? 'bg-accent hover:bg-accent/90 text-white shadow-md hover:shadow-lg' 
-                    : 'bg-gray-100 dark:bg-white/5 text-gray-400 dark:text-zinc-500 cursor-not-allowed'
+                    ? 'bg-gray-900 hover:bg-gray-800 dark:bg-white dark:hover:bg-zinc-200 text-white dark:text-black cursor-pointer' 
+                    : 'bg-gray-100 dark:bg-zinc-800 text-gray-400 dark:text-zinc-500 cursor-not-allowed'
                 }`}
               >
-                Continue to Cryptex
+                Continue to Workspace
               </button>
             </div>
           </motion.div>
@@ -172,6 +205,3 @@ export const UpdateLogsModal: React.FC = () => {
     </AnimatePresence>
   );
 };
-
-
-

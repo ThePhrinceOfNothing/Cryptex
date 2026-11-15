@@ -6,6 +6,10 @@ import { Plus, Clock, CheckCircle2, Check, X, Trash2, GripVertical, CircleDashed
 import type { Task } from '../../lib/vault';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ConfirmModal } from '../modals/ConfirmModal';
+import { sendNotification } from '@tauri-apps/plugin-notification';
+import { useToast } from '../../context/ToastContext';
+import { playCoinClink, playKeyClick } from '../../lib/soundEngine';
+import { addExperience, unlockBadge } from '../../lib/gamification';
 
 const PRIORITY_COLORS = {
   low: 'text-blue-500 bg-blue-500/10 border-blue-500/20',
@@ -24,6 +28,7 @@ const COLUMNS = [
 
 export const Tasks: React.FC = () => {
   const { vaultData, updateVaultData } = useVault();
+  const { showToast } = useToast();
   const tasks = vaultData?.tasks || [];
   
   const [editingTask, setEditingTask] = useState<Task | null>(null);
@@ -45,15 +50,27 @@ export const Tasks: React.FC = () => {
       if (timerMode === 'focus') {
         setTimerMode('break');
         setTimeLeft(5 * 60);
-        new Notification("Focus session complete! Take a 5 minute break.");
+        showToast("Focus session complete! Take a 5 minute break. (+30 XP)", { type: 'success' });
+        
+        // Award XP and unlock Deep Focus badge
+        const badgeRes = unlockBadge(vaultData?.gamification, 'pomodoro_master');
+        const xpResult = addExperience(badgeRes.newState, 30, vaultData?.settings?.soundEnabled ?? true);
+        updateVaultData({ gamification: xpResult.newState }).catch(() => {});
+
+        try {
+          sendNotification({ title: 'Focus Session Complete', body: 'Take a 5 minute break.' });
+        } catch {}
       } else {
         setTimerMode('focus');
         setTimeLeft(25 * 60);
-        new Notification("Break is over! Ready to focus?");
+        showToast("Break is over! Ready to focus?", { type: 'info' });
+        try {
+          sendNotification({ title: 'Break Over', body: 'Ready to start your next focus session?' });
+        } catch {}
       }
     }
     return () => clearInterval(interval);
-  }, [isTimerRunning, timeLeft, timerMode]);
+  }, [isTimerRunning, timeLeft, timerMode, showToast]);
 
   const toggleTimer = () => setIsTimerRunning(!isTimerRunning);
   const resetTimer = () => {
@@ -68,9 +85,22 @@ export const Tasks: React.FC = () => {
     const { source, destination, draggableId } = result;
     if (source.droppableId === destination.droppableId && source.index === destination.index) return;
 
-    if (sortByPriority) {
+    if (destination.droppableId === 'done' && source.droppableId !== 'done') {
+      playCoinClink();
+      const xpResult = addExperience(vaultData?.gamification, 15, vaultData?.settings?.soundEnabled ?? true);
+      if (sortByPriority) {
+        const newTasks = tasks.map(t => t.id === draggableId ? { ...t, status: destination.droppableId as Task['status'] } : t);
+        await updateVaultData({ tasks: newTasks, gamification: xpResult.newState });
+        return;
+      }
+    } else if (sortByPriority) {
       const newTasks = tasks.map(t => t.id === draggableId ? { ...t, status: destination.droppableId as Task['status'] } : t);
+      if (destination.droppableId === 'done' && source.droppableId !== 'done') {
+      const xpResult = addExperience(vaultData?.gamification, 15, vaultData?.settings?.soundEnabled ?? true);
+      await updateVaultData({ tasks: newTasks, gamification: xpResult.newState });
+    } else {
       await updateVaultData({ tasks: newTasks });
+    }
       return;
     }
 
@@ -91,7 +121,12 @@ export const Tasks: React.FC = () => {
       newTasks.splice(targetGlobalIndex, 0, movedTask);
     }
 
-    await updateVaultData({ tasks: newTasks });
+    if (destination.droppableId === 'done' && source.droppableId !== 'done') {
+      const xpResult = addExperience(vaultData?.gamification, 15, vaultData?.settings?.soundEnabled ?? true);
+      await updateVaultData({ tasks: newTasks, gamification: xpResult.newState });
+    } else {
+      await updateVaultData({ tasks: newTasks });
+    }
   };
 
   const handleCreateTask = async (status: Task['status']) => {
@@ -115,16 +150,28 @@ export const Tasks: React.FC = () => {
   };
 
   const handleToggleSubtask = async (taskId: string, subtaskId: string) => {
+    let completing = false;
     const updatedTasks = tasks.map(t => {
       if (t.id === taskId && t.subtasks) {
-        const updatedSubtasks = t.subtasks.map(s => 
-          s.id === subtaskId ? { ...s, isCompleted: !s.isCompleted } : s
-        );
+        const updatedSubtasks = t.subtasks.map(s => {
+          if (s.id === subtaskId) {
+            if (!s.isCompleted) completing = true;
+            return { ...s, isCompleted: !s.isCompleted };
+          }
+          return s;
+        });
         return { ...t, subtasks: updatedSubtasks };
       }
       return t;
     });
-    await updateVaultData({ tasks: updatedTasks });
+
+    if (completing) {
+      playCoinClink();
+      const xpResult = addExperience(vaultData?.gamification, 5, vaultData?.settings?.soundEnabled ?? true);
+      await updateVaultData({ tasks: updatedTasks, gamification: xpResult.newState });
+    } else {
+      await updateVaultData({ tasks: updatedTasks });
+    }
   };
 
   const handleDeleteTask = async () => {

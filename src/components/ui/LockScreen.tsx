@@ -11,6 +11,7 @@ import { getVersion } from '@tauri-apps/api/app';
 import { OnboardingStepper } from './OnboardingStepper';
 import type { VaultData } from '../../lib/vault';
 import { saveVault } from '../../lib/vault';
+import { playVaultLock } from '../../lib/soundEngine';
 
 export const LockScreen: React.FC = () => {
   const { unlockVault } = useVault();
@@ -23,15 +24,9 @@ export const LockScreen: React.FC = () => {
   const [appVersion, setAppVersion] = useState<string>('1.4.0');
   const [updateAvailable, setUpdateAvailable] = useState<any>(null);
   const [isUpdating, setIsUpdating] = useState(false);
-  const [time, setTime] = useState(new Date());
 
   const inputRef = useRef<HTMLInputElement>(null);
   const shakeControls = useAnimation();
-
-  useEffect(() => {
-    const timer = setInterval(() => setTime(new Date()), 1000);
-    return () => clearInterval(timer);
-  }, []);
 
   useEffect(() => {
     getVersion().then(setAppVersion).catch(() => {});
@@ -88,6 +83,26 @@ export const LockScreen: React.FC = () => {
       const { data, key, salt } = await loadVault(password);
       unlockVault(key, salt, data);
     } catch (err: any) {
+      // Check for duress / decoy vault
+      const decoyRaw = localStorage.getItem('tectoryx_decoy_vault');
+      if (decoyRaw) {
+        try {
+          const decoyPayload = JSON.parse(decoyRaw);
+          const { base64ToBuffer, deriveKey, decryptData } = await import('../../lib/crypto');
+          const salt = new Uint8Array(base64ToBuffer(decoyPayload.salt));
+          const iv = new Uint8Array(base64ToBuffer(decoyPayload.iv));
+          const ciphertext = new Uint8Array(base64ToBuffer(decoyPayload.ciphertext));
+          const decoyKey = await deriveKey(password, salt);
+          const jsonStr = await decryptData(ciphertext, iv, decoyKey);
+          const decoyData = JSON.parse(jsonStr);
+          unlockVault(decoyKey, salt, decoyData);
+          return;
+        } catch {
+          // Decoy password attempt failed as well, continue to error
+        }
+      }
+
+      playVaultLock();
       setError("Decryption failed. Incorrect master password.");
       triggerErrorShake();
       setTimeout(() => inputRef.current?.focus(), 50);
@@ -170,70 +185,46 @@ export const LockScreen: React.FC = () => {
   }
 
   return (
-    <div className="relative w-screen min-h-screen flex flex-col justify-between items-center bg-[#09090b] text-zinc-100 select-none overflow-hidden p-6 sm:p-10">
+    <div className="relative w-full h-full flex flex-col justify-center items-center bg-[#09090b] text-zinc-100 select-none overflow-hidden p-6">
       
-      {/* Precision Geometric Security Grid Background (No GPU loop) */}
-      <div className="absolute inset-0 pointer-events-none opacity-[0.035] bg-[linear-gradient(to_right,#ffffff_1px,transparent_1px),linear-gradient(to_bottom,#ffffff_1px,transparent_1px)] bg-[size:40px_40px]" />
-      
-      {/* Subtle Radial Sovereign Ambient Core */}
+      {/* Subtle Ambient Radial Glow */}
       <div 
-        className="absolute inset-0 pointer-events-none opacity-40"
+        className="absolute inset-0 pointer-events-none opacity-30"
         style={{
-          background: 'radial-gradient(circle at 50% 42%, rgba(37,99,235,0.12) 0%, rgba(9,9,11,0) 65%)'
+          background: 'radial-gradient(circle at 50% 45%, rgba(37,99,235,0.07) 0%, rgba(9,9,11,0) 65%)'
         }}
       />
 
-      {/* Top Header: Updater & Clock */}
-      <header className="relative z-10 w-full max-w-4xl flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-          <span className="text-[11px] font-mono tracking-wider text-zinc-500 uppercase">
-            Encrypted Enclave Active
-          </span>
+      {/* Top Updater Indicator (only if update available) */}
+      {updateAvailable && (
+        <div className="absolute top-5 right-5 z-10">
+          <button
+            onClick={handleUpdateApp}
+            disabled={isUpdating}
+            className="flex items-center gap-1.5 px-3 py-1 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/30 rounded-full text-blue-400 text-xs transition-colors active:scale-95"
+          >
+            <DownloadCloud size={13} className={isUpdating ? "animate-bounce" : ""} />
+            <span>{isUpdating ? "Updating..." : `v${updateAvailable.version} Available`}</span>
+          </button>
         </div>
+      )}
 
-        <div className="flex items-center gap-3">
-          {updateAvailable && (
-            <button
-              onClick={handleUpdateApp}
-              disabled={isUpdating}
-              className="flex items-center gap-1.5 px-3 py-1 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/30 rounded-full text-blue-400 text-xs transition-colors active:scale-95"
-            >
-              <DownloadCloud size={13} className={isUpdating ? "animate-bounce" : ""} />
-              <span>{isUpdating ? "Updating..." : `v${updateAvailable.version} Available`}</span>
-            </button>
-          )}
-
-          <div className="text-right">
-            <span className="text-xs font-mono tabular-nums text-zinc-400">
-              {time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-            </span>
-          </div>
-        </div>
-      </header>
-
-      {/* Center Sovereign Unlock Hub */}
-      <main className="relative z-10 w-full max-w-sm flex flex-col items-center my-auto">
+      {/* Center Unlock Hub */}
+      <main className="relative z-10 w-full max-w-xs sm:max-w-sm flex flex-col items-center">
         
-        {/* Hardware Prism Shield Bezel */}
-        <div className="relative mb-6">
-          <div className="w-16 h-16 rounded-2xl bg-zinc-900 border border-zinc-800/90 shadow-2xl flex items-center justify-center p-3 transition-transform hover:scale-105 duration-200">
-            <img src={logoUrl} alt="Tectoryx" className="w-full h-full object-contain drop-shadow" />
+        {/* App Logo */}
+        <div className="relative mb-5">
+          <div className="w-16 h-16 rounded-2xl bg-zinc-900 border border-zinc-800 shadow-xl flex items-center justify-center p-3.5 transition-transform hover:scale-105 duration-200">
+            <img src={logoUrl} alt="Tectoryx" className="w-full h-full object-contain" />
           </div>
           <div className="absolute -inset-1 rounded-2xl bg-blue-500/10 -z-10 blur-xs" />
         </div>
 
-        {/* Brand & Workspace Identity */}
-        <div className="text-center mb-8">
-          <h1 className="text-xs font-bold tracking-[0.28em] uppercase text-zinc-400 mb-1.5">
+        {/* Brand Title */}
+        <div className="text-center mb-7">
+          <h1 className="text-xl font-semibold tracking-tight text-white">
             Tectoryx
           </h1>
-          <p className="text-base font-semibold text-white tracking-tight">
-            {appConfig?.workspaceName || 'Master Vault'}
-          </p>
-          <p className="text-xs text-zinc-500 mt-0.5">
-            Local AES-256-GCM zero-knowledge partition
-          </p>
         </div>
 
         {/* Unlock Form with Motion Error Shake */}
@@ -261,7 +252,7 @@ export const LockScreen: React.FC = () => {
               }}
               placeholder="Enter master password"
               disabled={isLoading}
-              className="w-full bg-transparent px-3 py-3 text-xs sm:text-sm text-white placeholder-zinc-500 focus:outline-none font-mono tracking-wider"
+              className="w-full bg-transparent px-3 py-3 text-xs sm:text-sm text-white placeholder-zinc-500 focus:outline-none"
             />
 
             <div className="flex items-center pr-2 gap-1">
@@ -297,26 +288,18 @@ export const LockScreen: React.FC = () => {
               <span>{error}</span>
             </div>
           ) : (
-            <div className="flex items-center justify-between text-[11px] text-zinc-500 px-1 font-mono">
-              <span>Press Enter ↵ to decrypt</span>
-              <span>Offline</span>
+            <div className="text-center text-[11px] text-zinc-500">
+              Press Enter to unlock
             </div>
           )}
         </motion.form>
 
       </main>
 
-      {/* Bottom Footer Status Bar */}
-      <footer className="relative z-10 w-full max-w-4xl flex items-center justify-between text-[11px] text-zinc-500 font-mono border-t border-zinc-900 pt-4">
-        <div className="flex items-center gap-2">
-          <span>Tectoryx v{appVersion}</span>
-          <span>•</span>
-          <span>Zero-Knowledge Architecture</span>
-        </div>
-        <div>
-          <span>{time.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' })}</span>
-        </div>
-      </footer>
+      {/* Borderless corner version indicator */}
+      <div className="absolute bottom-4 left-6 text-[11px] text-zinc-600 pointer-events-none select-none">
+        v{appVersion}
+      </div>
 
     </div>
   );

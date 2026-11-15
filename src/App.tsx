@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { VaultProvider, useVault } from './context/VaultContext';
 import { ToastProvider } from './context/ToastContext';
 import { LockScreen } from './components/ui/LockScreen';
+import { TitleBar } from './components/layout/TitleBar';
 const LazyDashboard = React.lazy(() => import('./components/modules/Dashboard').then(m => ({ default: m.Dashboard })));
 const LazyAppLayout = React.lazy(() => import('./components/layout/AppLayout').then(m => ({ default: m.AppLayout })));
 const LazyMyVaultList = React.lazy(() => import('./components/modules/MyVault').then(m => ({ default: m.MyVaultList })));
@@ -22,6 +23,7 @@ function AppContent() {
   const [activeTab, setActiveTabState] = useState<string>('Dashboard');
   const [selectedCredentialId, setSelectedCredentialId] = useState<string | null>(null);
   const [isCreating, setIsCreating] = useState(false);
+  const [isNotesGraphOpen, setIsNotesGraphOpen] = useState(false);
 
   const setActiveTab = (tab: string, action?: 'create') => {
     setActiveTabState(tab);
@@ -36,12 +38,53 @@ function AppContent() {
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      // Prevent browser print dialog
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'p') {
         e.preventDefault();
       }
+      // Prevent accidental browser reload which would flush decrypted vault state from RAM
+      if (
+        e.key === 'F5' ||
+        ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'r')
+      ) {
+        e.preventDefault();
+      }
     };
+
+    // Suppress Chromium default context menu on non-input chrome
+    const handleContextMenu = (e: MouseEvent) => {
+      const target = e.target as HTMLElement | null;
+      const isInput = target && (
+        target.tagName === 'INPUT' ||
+        target.tagName === 'TEXTAREA' ||
+        target.isContentEditable ||
+        target.closest('.ProseMirror')
+      );
+      if (!isInput) {
+        e.preventDefault();
+      }
+    };
+
+    // Prevent accidental browser file-drop navigation
+    const handleDragOver = (e: DragEvent) => e.preventDefault();
+    const handleDrop = (e: DragEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (!target?.closest('[data-dropzone]')) {
+        e.preventDefault();
+      }
+    };
+
     window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    window.addEventListener('contextmenu', handleContextMenu);
+    window.addEventListener('dragover', handleDragOver);
+    window.addEventListener('drop', handleDrop);
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('contextmenu', handleContextMenu);
+      window.removeEventListener('dragover', handleDragOver);
+      window.removeEventListener('drop', handleDrop);
+    };
   }, []);
 
   useEffect(() => {
@@ -123,20 +166,22 @@ function AppContent() {
         onSelect={(id) => {
           setSelectedCredentialId(id);
           setIsCreating(false);
+          setIsNotesGraphOpen(false);
         }}
-        onCreateNew={() => {
-          setIsCreating(true);
-          setSelectedCredentialId(null);
-        }}
+        onToggleGraph={() => setIsNotesGraphOpen(!isNotesGraphOpen)}
+        isGraphOpen={isNotesGraphOpen}
       />
     );
     content = (
       <LazyNotesEditor 
+        key={selectedCredentialId || 'empty'}
         selectedId={selectedCredentialId} 
         onSelect={(id) => {
           setSelectedCredentialId(id);
           setIsCreating(false);
         }}
+        isGraphOpen={isNotesGraphOpen}
+        onCloseGraph={() => setIsNotesGraphOpen(false)}
       />
     );
   } else if (activeTab === 'Tasks') {
@@ -158,39 +203,44 @@ function AppContent() {
   };
 
   return (
-    <AnimatePresence mode="wait">
-      {isLocked ? (
-        <LockScreen key="lockscreen" />
-      ) : (
-          <motion.div
-            key="app"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.4, ease: 'easeOut' }}
-            className="h-full w-full"
-          >
-            <React.Suspense fallback={<div className="w-full h-screen flex items-center justify-center bg-white dark:bg-[#0c0c0e]"><div className="animate-spin rounded-full h-8 w-8 border-t-2 border-accent"></div></div>}>
-              <LazyAppLayout 
-                activeTab={activeTab} 
-                setActiveTab={setActiveTab}
-                middlePane={middlePane}
-                hasDetail={hasDetail}
-                onBackToList={handleBackToList}
-              >
-                <LazyOnboardingTour />
-                <React.Suspense fallback={
-                  <div className="w-full h-full flex items-center justify-center">
-                    <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-accent"></div>
-                  </div>
-                }>
-                  {content}
-                </React.Suspense>
-              </LazyAppLayout>
-            </React.Suspense>
-          </motion.div>
-      )}
-    </AnimatePresence>
+    <div className="flex flex-col h-screen w-screen overflow-hidden select-none bg-[#09090b]">
+      <TitleBar />
+      <div className="flex-1 w-full overflow-hidden relative">
+        <AnimatePresence mode="wait">
+          {isLocked ? (
+            <LockScreen key="lockscreen" />
+          ) : (
+            <motion.div
+              key="app"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.4, ease: 'easeOut' }}
+              className="h-full w-full"
+            >
+              <React.Suspense fallback={<div className="w-full h-full flex items-center justify-center bg-white dark:bg-[#0c0c0e]"><div className="animate-spin rounded-full h-8 w-8 border-t-2 border-accent"></div></div>}>
+                <LazyAppLayout 
+                  activeTab={activeTab} 
+                  setActiveTab={setActiveTab}
+                  middlePane={middlePane}
+                  hasDetail={hasDetail}
+                  onBackToList={handleBackToList}
+                >
+                  <LazyOnboardingTour />
+                  <React.Suspense fallback={
+                    <div className="w-full h-full flex items-center justify-center">
+                      <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-accent"></div>
+                    </div>
+                  }>
+                    {content}
+                  </React.Suspense>
+                </LazyAppLayout>
+              </React.Suspense>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    </div>
   );
 }
 

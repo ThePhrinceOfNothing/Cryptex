@@ -4,6 +4,20 @@
 
 body {
   @apply bg-white text-gray-900 dark:bg-[#0c0c0e] dark:text-zinc-100 min-h-screen font-sans;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* Allow text selection in content surfaces while preventing accidental UI dragging highlights */
+input,
+textarea,
+[contenteditable="true"],
+.ProseMirror,
+code,
+pre,
+.selectable-text {
+  user-select: text;
+  -webkit-user-select: text;
 }
 
 html[data-density='compact'] .p-4 { padding: 0.5rem; }
@@ -105,3 +119,101 @@ input[type="password"]::-webkit-clear-button {
 .ProseMirror pre code { @apply bg-transparent text-gray-100 p-0; }
 .dark .ProseMirror strong { @apply text-zinc-100; }
 .ProseMirror strong { @apply font-bold text-gray-900; }
+
+/* Terminal Hacker CRT Mode - True Monospace Phosphor Engine */
+html.theme-hacker-green,
+.theme-hacker-green {
+  --color-accent: #22c55e !important;
+  color-scheme: dark !important;
+}
+.theme-hacker-green,
+.theme-hacker-green * {
+  font-family: 'Consolas', 'Courier New', monospace !important;
+}
+.theme-hacker-green,
+.theme-hacker-green body,
+.theme-hacker-green [class*="bg-white"],
+.theme-hacker-green [class*="bg-gray-"],
+.theme-hacker-green [class*="bg-zinc-"],
+.theme-hacker-green [class*="bg-[#"] {
+  background-color: #040905 !important;
+}
+.theme-hacker-green [class*="border-"] {
+  border-color: #14532d !important;
+}
+.theme-hacker-green [class*="text-gray-"],
+.theme-hacker-green [class*="text-zinc-"],
+.theme-hacker-green [class*="text-slate-"] {
+  color: #4ade80 !important;
+}
+.theme-hacker-green [class*="text-white"],
+.theme-hacker-green h1,
+.theme-hacker-green h2,
+.theme-hacker-green h3,
+.theme-hacker-green h4 {
+  color: #86efac !important;
+  text-shadow: 0 0 6px rgba(74, 222, 128, 0.4) !important;
+}
+.theme-hacker-green input,
+.theme-hacker-green select,
+.theme-hacker-green textarea {
+  background-color: #020502 !important;
+  color: #4ade80 !important;
+  border-color: #22c55e !important;
+}
+
+/* Amber CRT Mode */
+html.theme-hacker-amber,
+.theme-hacker-amber {
+  --color-accent: #f59e0b !important;
+  color-scheme: dark !important;
+}
+.theme-hacker-amber,
+.theme-hacker-amber * {
+  font-family: 'Consolas', 'Courier New', monospace !important;
+}
+.theme-hacker-amber,
+.theme-hacker-amber body,
+.theme-hacker-amber [class*="bg-white"],
+.theme-hacker-amber [class*="bg-gray-"],
+.theme-hacker-amber [class*="bg-zinc-"],
+.theme-hacker-amber [class*="bg-[#"] {
+  background-color: #0a0703 !important;
+}
+.theme-hacker-amber [class*="border-"] {
+  border-color: #78350f !important;
+}
+.theme-hacker-amber [class*="text-gray-"],
+.theme-hacker-amber [class*="text-zinc-"],
+.theme-hacker-amber [class*="text-slate-"] {
+  color: #fbbf24 !important;
+}
+.theme-hacker-amber [class*="text-white"],
+.theme-hacker-amber h1,
+.theme-hacker-amber h2,
+.theme-hacker-amber h3,
+.theme-hacker-amber h4 {
+  color: #fde68a !important;
+  text-shadow: 0 0 6px rgba(251, 191, 36, 0.4) !important;
+}
+.theme-hacker-amber input,
+.theme-hacker-amber select,
+.theme-hacker-amber textarea {
+  background-color: #050301 !important;
+  color: #fbbf24 !important;
+  border-color: #f59e0b !important;
+}
+
+/* Authentic CRT Scanlines & Phosphor Grid */
+.crt-scanlines::after {
+  content: "";
+  display: block;
+  position: fixed;
+  top: 0; left: 0; bottom: 0; right: 0;
+  background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.3) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.03));
+  z-index: 99999;
+  background-size: 100% 3px, 4px 100%;
+  pointer-events: none;
+  opacity: 0.85;
+}
+

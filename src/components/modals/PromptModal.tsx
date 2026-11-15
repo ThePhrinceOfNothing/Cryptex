@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X } from 'lucide-react';
+import { X, FolderPlus } from 'lucide-react';
 
 interface PromptModalProps {
   isOpen: boolean;
@@ -25,7 +25,7 @@ export const PromptModal: React.FC<PromptModalProps> = ({
   useEffect(() => {
     if (isOpen) {
       setValue(initialValue);
-      setTimeout(() => inputRef.current?.focus(), 100);
+      setTimeout(() => inputRef.current?.focus(), 80);
     }
   }, [isOpen, initialValue]);
 
@@ -40,52 +40,52 @@ export const PromptModal: React.FC<PromptModalProps> = ({
   return (
     <AnimatePresence>
       {isOpen && (
-        <div className="fixed inset-0 z-[150] flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={onClose}
-            className="absolute inset-0 bg-black/40 backdrop-blur-sm"
-          />
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: 10 }}
+            initial={{ opacity: 0, scale: 0.96, y: 8 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: 10 }}
-            className="relative w-full max-w-md bg-white dark:bg-[#18181b] border border-gray-200 dark:border-[#262626] rounded-xl shadow-2xl overflow-hidden"
+            exit={{ opacity: 0, scale: 0.96, y: 8 }}
+            transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
+            className="w-full max-w-md bg-white dark:bg-[#121214] border border-gray-200 dark:border-[#27272a] rounded-xl shadow-2xl overflow-hidden"
           >
-            <div className="flex items-center justify-between p-4 border-b border-gray-100 dark:border-white/5">
-              <h3 className="font-medium text-gray-900 dark:text-zinc-100">{title}</h3>
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-white/5 bg-gray-50/50 dark:bg-[#18181b]/50">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 flex items-center justify-center shrink-0 border border-zinc-200 dark:border-zinc-700">
+                  <FolderPlus size={16} strokeWidth={1.75} />
+                </div>
+                <h3 className="font-semibold text-base text-gray-900 dark:text-zinc-100 tracking-tight">{title}</h3>
+              </div>
               <button 
                 onClick={onClose}
-                className="text-gray-400 hover:text-gray-600 dark:hover:text-zinc-300 transition-colors"
+                className="p-1 rounded-md text-gray-400 hover:text-gray-600 dark:hover:text-zinc-300 hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors"
+                title="Close"
               >
-                <X size={18} />
+                <X size={16} strokeWidth={1.75} />
               </button>
             </div>
             
-            <form onSubmit={handleSubmit} className="p-4 space-y-4">
+            <form onSubmit={handleSubmit} className="p-6 space-y-4">
               <input
                 ref={inputRef}
                 type="text"
                 value={value}
                 onChange={(e) => setValue(e.target.value)}
                 placeholder={placeholder}
-                className="w-full px-3 py-2 bg-gray-50 dark:bg-black border border-gray-200 dark:border-[#262626] rounded-lg text-sm text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-accent/50"
+                className="w-full px-3 py-2 bg-gray-50 dark:bg-[#18181b] border border-gray-200 dark:border-[#27272a] rounded-lg text-xs sm:text-sm text-gray-900 dark:text-zinc-100 font-medium focus:outline-none focus:border-zinc-900 dark:focus:border-white transition-colors"
               />
               
               <div className="flex justify-end gap-2 pt-2">
                 <button
                   type="button"
                   onClick={onClose}
-                  className="px-4 py-2 text-sm font-medium text-gray-600 dark:text-zinc-400 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-lg transition-colors"
+                  className="px-3.5 py-1.5 text-xs sm:text-sm font-medium text-gray-600 dark:text-zinc-400 hover:text-gray-900 dark:hover:text-white rounded-lg transition-colors active:scale-[0.98]"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={!value.trim()}
-                  className="px-4 py-2 text-sm font-medium bg-accent text-white rounded-lg hover:bg-accent/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-4 py-1.5 text-xs sm:text-sm font-medium bg-gray-900 hover:bg-gray-800 dark:bg-white dark:hover:bg-zinc-200 text-white dark:text-black rounded-lg transition-colors shadow-2xs active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   Create
                 </button>
@@ -97,4 +97,3 @@ export const PromptModal: React.FC<PromptModalProps> = ({
     </AnimatePresence>
   );
 };
-

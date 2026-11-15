@@ -16,13 +16,18 @@ import {
   X,
   ArrowLeft,
   PanelLeftClose,
-  PanelLeft
+  PanelLeft,
+  Sparkles,
+  EyeOff
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useVault } from '../../context/VaultContext';
 import { GlobalSearch } from '../ui/GlobalSearch';
 import { UpdateLogsModal } from '../modals/UpdateLogsModal';
 import { GhostPet } from '../ui/GhostPet';
+import { AmbiencePlayer } from '../ui/AmbiencePlayer';
+import { QuickScratchpadModal } from '../ui/QuickScratchpadModal';
+import { SteganographyModal } from '../modals/SteganographyModal';
 
 interface AppLayoutProps {
   children: ReactNode;
@@ -45,6 +50,8 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isMiddlePaneOpen, setIsMiddlePaneOpen] = useState(true);
+  const [isScratchpadOpen, setIsScratchpadOpen] = useState(false);
+  const [isSteganographyOpen, setIsSteganographyOpen] = useState(false);
 
   const { vaultData, lockVault, lockCountdown } = useVault();
 
@@ -66,6 +73,11 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
       if ((e.ctrlKey || e.metaKey) && (e.shiftKey || e.altKey) && (e.key === 'l' || e.key === 'L')) {
         e.preventDefault();
         handleLockRequest();
+      }
+      // Quick Scratchpad: Ctrl+Shift+Space
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.code === 'Space' || e.key === ' ')) {
+        e.preventDefault();
+        setIsScratchpadOpen(prev => !prev);
       }
     };
     window.addEventListener('keydown', handleGlobalShortcuts);
@@ -108,10 +120,34 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
     { name: 'Income', icon: DollarSign },
   ];
 
+  const hackerTheme = vaultData?.settings?.terminalHackerTheme;
+
+  useEffect(() => {
+    const root = document.documentElement;
+    root.classList.remove('theme-hacker-green', 'theme-hacker-amber', 'crt-scanlines');
+    if (hackerTheme === 'green') {
+      root.classList.add('theme-hacker-green', 'crt-scanlines');
+    } else if (hackerTheme === 'amber') {
+      root.classList.add('theme-hacker-amber', 'crt-scanlines');
+    }
+    return () => {
+      root.classList.remove('theme-hacker-green', 'theme-hacker-amber', 'crt-scanlines');
+    };
+  }, [hackerTheme]);
+
   return (
     <>
       <UpdateLogsModal />
       <GlobalSearch onNavigate={setActiveTab} />
+      <QuickScratchpadModal
+        isOpen={isScratchpadOpen}
+        onClose={() => setIsScratchpadOpen(false)}
+        onNavigateToTab={setActiveTab}
+      />
+      <SteganographyModal
+        isOpen={isSteganographyOpen}
+        onClose={() => setIsSteganographyOpen(false)}
+      />
 
       {/* Auto-Lock Warning Banner */}
       <AnimatePresence>
@@ -137,7 +173,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
         )}
       </AnimatePresence>
 
-      <div className="flex h-screen w-full bg-white dark:bg-[#0a0a0a] overflow-hidden text-sm select-none">
+      <div className="flex h-full w-full bg-white dark:bg-[#0a0a0a] overflow-hidden text-sm select-none">
         
         {/* MOBILE TOP NAVIGATION BAR (< 768px) */}
         {isMobile && (
@@ -165,6 +201,21 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
             </div>
 
             <div className="flex items-center gap-1">
+              <AmbiencePlayer />
+              <button
+                onClick={() => setIsScratchpadOpen(true)}
+                className="p-1.5 rounded-md text-gray-600 dark:text-zinc-400 hover:text-gray-900 dark:hover:text-zinc-100 hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors active:scale-[0.97]"
+                title="Quick Scratchpad (Ctrl+Shift+Space)"
+              >
+                <Sparkles size={16} strokeWidth={1.75} />
+              </button>
+              <button
+                onClick={() => setIsSteganographyOpen(true)}
+                className="p-1.5 rounded-md text-gray-600 dark:text-zinc-400 hover:text-gray-900 dark:hover:text-zinc-100 hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors active:scale-[0.97]"
+                title="Steganography Studio"
+              >
+                <EyeOff size={16} strokeWidth={1.75} />
+              </button>
               <button
                 onClick={() => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', ctrlKey: true }))}
                 className="p-2 rounded-md text-gray-600 dark:text-zinc-400 hover:text-gray-900 dark:hover:text-zinc-100 hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors active:scale-[0.97]"
@@ -368,7 +419,43 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
                 );
               })}
 
-              <div className="mt-auto pt-4 flex flex-col space-y-0.5 border-t border-gray-200 dark:border-[#262626]">
+              <div className="mt-auto pt-3 border-t border-gray-200 dark:border-[#262626] flex flex-col space-y-0.5">
+                {!isSidebarCollapsed && (
+                  <span className="px-3 pb-1 text-[10px] font-mono text-gray-400 dark:text-zinc-500 uppercase tracking-wider font-semibold">
+                    Tools
+                  </span>
+                )}
+
+                {/* Focus Ambience Player */}
+                <AmbiencePlayer isCollapsed={isSidebarCollapsed} />
+
+                {/* Quick Scratchpad */}
+                <button
+                  onClick={() => setIsScratchpadOpen(true)}
+                  className={`w-full flex items-center ${isSidebarCollapsed ? 'justify-center py-2' : 'justify-between px-3 py-1.5'} rounded-lg text-xs font-medium text-gray-600 dark:text-zinc-400 hover:text-gray-900 dark:hover:text-zinc-100 hover:bg-gray-100/70 dark:hover:bg-zinc-800/40 transition-colors active:scale-[0.97]`}
+                  title="Quick Scratchpad (Ctrl+Shift+Space)"
+                >
+                  <div className="flex items-center gap-3">
+                    <Sparkles size={17} strokeWidth={1.75} className="text-gray-500 dark:text-zinc-400 shrink-0" />
+                    {!isSidebarCollapsed && <span>Scratchpad</span>}
+                  </div>
+                  {!isSidebarCollapsed && (
+                    <span className="text-[10px] font-mono text-gray-400 dark:text-zinc-500 bg-gray-100 dark:bg-zinc-800/80 px-1 py-0.5 rounded border border-gray-200/60 dark:border-zinc-700/60">
+                      Ctrl+Shift+Space
+                    </span>
+                  )}
+                </button>
+
+                {/* Steganography Studio */}
+                <button
+                  onClick={() => setIsSteganographyOpen(true)}
+                  className={`w-full flex items-center ${isSidebarCollapsed ? 'justify-center py-2' : 'gap-3 px-3 py-1.5'} rounded-lg text-xs font-medium text-gray-600 dark:text-zinc-400 hover:text-gray-900 dark:hover:text-zinc-100 hover:bg-gray-100/70 dark:hover:bg-zinc-800/40 transition-colors active:scale-[0.97]`}
+                  title="PNG Steganography Studio"
+                >
+                  <EyeOff size={17} strokeWidth={1.75} className="text-gray-500 dark:text-zinc-400 shrink-0" />
+                  {!isSidebarCollapsed && <span>Steganography</span>}
+                </button>
+
                 <button
                   onClick={() => setActiveTab('Settings')}
                   className={`relative w-full flex items-center ${isSidebarCollapsed ? 'justify-center py-2' : 'gap-3 px-3 py-1.5'} rounded-lg text-xs font-medium transition-colors active:scale-[0.97] ${
