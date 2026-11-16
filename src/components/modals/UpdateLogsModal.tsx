@@ -6,6 +6,15 @@ import { CheckCircle2, ChevronDown } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 
 const LOCAL_RELEASE_NOTES: Record<string, string> = {
+  '1.5.4': `### What's New in Tectoryx v1.5.4
+
+#### Vault Preservation & Recovery
+- **Multi-Tier Vault Preservation:** Complete protection against data loss caused by crashes, power outages, app updates, or accidental corruption.
+- **Atomic File Writes & Fsync:** Saves are staged in temporary files with byte-level disk flush (\`sync_all\`) before atomic swap, preventing truncated or corrupted vault files.
+- **Automatic Encrypted Rolling Snapshots:** Every time you save, an AES-256-GCM encrypted snapshot is saved to a local rolling backup history (up to 30 snapshots).
+- **Pre-Update Snapshots:** The app automatically creates an immutable backup of your vault before applying any new application update.
+- **Transparent Self-Healing:** If \`data.vault\` is ever damaged or missing, Tectoryx automatically recovers from \`data.vault.prev\` or the newest valid local snapshot.
+- **Local Restore Points UI:** Added a snapshot browser to Settings, Onboarding, and the Lock Screen ("Trouble unlocking?"), enabling 1-click restore to any previous point in time.`,
   '1.5.3': `### What's New in Tectoryx v1.5.3
 
 #### Bug Fixes & Stability

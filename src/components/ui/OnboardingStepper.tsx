@@ -1,7 +1,8 @@
 import React, { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { AlertTriangle, DownloadCloud, CheckCircle2, UploadCloud } from 'lucide-react';
+import { AlertTriangle, DownloadCloud, CheckCircle2, UploadCloud, History } from 'lucide-react';
 import { importVault } from '../../lib/vault';
+import { VaultRestoreModal } from '../modals/VaultRestoreModal';
 import type { EncryptedPayload } from '../../lib/crypto';
 
 interface OnboardingStepperProps {
@@ -18,6 +19,7 @@ export const OnboardingStepper: React.FC<OnboardingStepperProps> = ({ onComplete
   const [error, setError] = useState<string | null>(null);
   const [isFinishing, setIsFinishing] = useState(false);
   const [isRestoring, setIsRestoring] = useState(false);
+  const [isSnapshotModalOpen, setIsSnapshotModalOpen] = useState(false);
   const [restoreError, setRestoreError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -175,6 +177,15 @@ export const OnboardingStepper: React.FC<OnboardingStepperProps> = ({ onComplete
                     <UploadCloud size={15} />
                     <span>{isRestoring ? 'Restoring vault...' : 'Restore from existing vault (.vault file)'}</span>
                   </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setIsSnapshotModalOpen(true)}
+                    className="w-full flex items-center justify-center gap-1.5 py-1.5 px-3 text-xs font-medium text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors cursor-pointer mt-1"
+                  >
+                    <History size={13} strokeWidth={1.75} />
+                    <span>Or restore from automatic local snapshot</span>
+                  </button>
                   {restoreError && (
                     <p className="text-[11px] text-rose-500 mt-1.5">{restoreError}</p>
                   )}
@@ -291,6 +302,15 @@ export const OnboardingStepper: React.FC<OnboardingStepperProps> = ({ onComplete
           </div>
         </div>
       </div>
+
+      <VaultRestoreModal
+        isOpen={isSnapshotModalOpen}
+        onClose={() => setIsSnapshotModalOpen(false)}
+        onRestored={() => {
+          if (onRestore) onRestore();
+          else window.location.reload();
+        }}
+      />
 
     </div>
   );

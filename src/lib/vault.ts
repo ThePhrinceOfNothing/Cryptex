@@ -252,4 +252,29 @@ export async function loadVault(password: string): Promise<{ data: VaultData, ke
   return { data, key, salt };
 }
 
+export interface VaultSnapshotInfo {
+  filename: string;
+  timestamp: number;
+  sizeBytes: number;
+  isPreUpdate: boolean;
+  reason: string;
+}
+
+export async function listVaultSnapshots(): Promise<VaultSnapshotInfo[]> {
+  return await invoke('list_vault_snapshots');
+}
+
+export async function restoreVaultSnapshot(filename: string): Promise<void> {
+  await invoke('restore_vault_snapshot', { filename });
+}
+
+export async function createManualSnapshot(reason?: string): Promise<string> {
+  return await invoke('create_manual_snapshot', { reason });
+}
+
+export async function createPreUpdateSnapshot(version: string): Promise<string> {
+  return await invoke('create_pre_update_snapshot', { version });
+}
+
+
 

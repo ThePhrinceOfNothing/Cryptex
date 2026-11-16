@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { User, Settings as SettingsIcon, Shield, Palette, Database, Upload, Download, Trash2, KeyRound, X, CheckCircle2, Info, Volume2 } from 'lucide-react';
+import { User, Settings as SettingsIcon, Shield, Palette, Database, Upload, Download, Trash2, KeyRound, X, CheckCircle2, Info, Volume2, History } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useVault } from '../../context/VaultContext';
 import { useToast } from '../../context/ToastContext';
 import { ConfirmModal } from '../modals/ConfirmModal';
+import { VaultRestoreModal } from '../modals/VaultRestoreModal';
 import { deleteVault } from '../../lib/vault';
 import type { VaultSettings } from '../../lib/vault';
 import { saveAppConfig } from '../../lib/config';
@@ -23,6 +24,7 @@ export const Settings: React.FC = () => {
   const [terminalHackerTheme, setTerminalHackerTheme] = useState<VaultSettings['terminalHackerTheme']>(settings.terminalHackerTheme || 'none');
 
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
+  const [isRestoreModalOpen, setIsRestoreModalOpen] = useState(false);
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [passwordError, setPasswordError] = useState('');
@@ -202,6 +204,12 @@ export const Settings: React.FC = () => {
         title="Import Backup"
         message="Importing a backup will overwrite the current vault on this device with the imported data. Are you sure you want to proceed?"
         confirmText="Overwrite Data"
+      />
+
+      <VaultRestoreModal
+        isOpen={isRestoreModalOpen}
+        onClose={() => setIsRestoreModalOpen(false)}
+        onRestored={() => window.location.reload()}
       />
 
       <div className="w-full max-w-5xl mx-auto p-5 sm:p-8 lg:p-10 h-full bg-white dark:bg-[#0a0a0a] flex flex-col overflow-y-auto">
@@ -608,10 +616,18 @@ export const Settings: React.FC = () => {
             <div className="bg-white dark:bg-[#121214] border border-gray-200 dark:border-[#27272a] rounded-xl p-5 shadow-2xs space-y-5">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
-                  <h4 className="text-xs sm:text-sm font-medium text-gray-900 dark:text-zinc-100">Vault Snapshots</h4>
-                  <p className="text-[11px] text-gray-500 dark:text-zinc-500 mt-0.5">Export an encrypted snapshot or restore from an existing `.vault` file.</p>
+                  <h4 className="text-xs sm:text-sm font-medium text-gray-900 dark:text-zinc-100">Vault Snapshots & Backups</h4>
+                  <p className="text-[11px] text-gray-500 dark:text-zinc-500 mt-0.5">Automated local restore points, manual file exports, and imports.</p>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <button
+                    onClick={() => setIsRestoreModalOpen(true)}
+                    className="px-3 py-1.5 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-900/40 hover:bg-blue-100 dark:hover:bg-blue-950/40 text-blue-700 dark:text-blue-400 text-xs font-medium rounded-lg transition-colors flex items-center gap-1.5 shadow-2xs active:scale-[0.98]"
+                  >
+                    <History className="w-3.5 h-3.5" strokeWidth={1.75} />
+                    <span>Restore Points</span>
+                  </button>
+
                   <button
                     onClick={exportVaultData}
                     className="px-3 py-1.5 bg-gray-50 dark:bg-[#18181b] border border-gray-200 dark:border-[#27272a] hover:bg-gray-100 dark:hover:bg-zinc-800 text-gray-800 dark:text-zinc-200 text-xs font-medium rounded-lg transition-colors flex items-center gap-1.5 shadow-2xs active:scale-[0.98]"

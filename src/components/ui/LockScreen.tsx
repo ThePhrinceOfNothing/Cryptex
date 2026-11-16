@@ -1,16 +1,16 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { vaultExists, loadVault } from '../../lib/vault';
+import { vaultExists, loadVault, saveVault, createPreUpdateSnapshot } from '../../lib/vault';
 import { loadAppConfig, saveAppConfig } from '../../lib/config';
 import type { AppConfig } from '../../lib/config';
 import { useVault } from '../../context/VaultContext';
-import { Eye, EyeOff, Lock, ShieldAlert, ArrowRight, DownloadCloud, User } from 'lucide-react';
+import { Eye, EyeOff, Lock, ShieldAlert, ArrowRight, DownloadCloud, User, History } from 'lucide-react';
 import logoUrl from '../../assets/logo.svg';
 import { motion, useAnimation } from 'framer-motion';
 import { check } from '@tauri-apps/plugin-updater';
 import { getVersion } from '@tauri-apps/api/app';
 import { OnboardingStepper } from './OnboardingStepper';
+import { VaultRestoreModal } from '../modals/VaultRestoreModal';
 import type { VaultData } from '../../lib/vault';
-import { saveVault } from '../../lib/vault';
 import { playVaultLock } from '../../lib/soundEngine';
 
 export const LockScreen: React.FC = () => {
@@ -24,6 +24,7 @@ export const LockScreen: React.FC = () => {
   const [appVersion, setAppVersion] = useState<string>('1.4.0');
   const [updateAvailable, setUpdateAvailable] = useState<any>(null);
   const [isUpdating, setIsUpdating] = useState(false);
+  const [isRestoreModalOpen, setIsRestoreModalOpen] = useState(false);
 
   const inputRef = useRef<HTMLInputElement>(null);
   const shakeControls = useAnimation();
@@ -141,10 +142,30 @@ export const LockScreen: React.FC = () => {
     if (!updateAvailable || isUpdating) return;
     setIsUpdating(true);
     try {
+      // Create an automatic pre-update safety snapshot of the vault
+      await createPreUpdateSnapshot(updateAvailable.version).catch((e) => {
+        console.warn("Failed to create pre-update snapshot, continuing:", e);
+      });
       await updateAvailable.downloadAndInstall();
     } catch (err) {
       console.error("Failed to install update:", err);
       setIsUpdating(false);
+    }
+  };
+
+  const handleSnapshotRestored = async () => {
+    try {
+      const exists = await vaultExists();
+      setHasVault(exists);
+      const config = await loadAppConfig();
+      if (config) {
+        setAppConfig(config);
+      }
+      setError(null);
+      setPassword('');
+      setTimeout(() => inputRef.current?.focus(), 150);
+    } catch (err) {
+      console.error("Failed to refresh vault after restore:", err);
     }
   };
 
@@ -296,9 +317,27 @@ export const LockScreen: React.FC = () => {
               Press Enter to unlock
             </div>
           )}
+
+          {/* Recovery Trigger */}
+          <div className="pt-2 flex justify-center">
+            <button
+              type="button"
+              onClick={() => setIsRestoreModalOpen(true)}
+              className="text-[11px] text-zinc-500 hover:text-zinc-300 transition-colors flex items-center gap-1.5 underline-offset-4 hover:underline"
+            >
+              <History size={12} strokeWidth={1.75} />
+              <span>Restore from backup snapshot</span>
+            </button>
+          </div>
         </motion.form>
 
       </main>
+
+      <VaultRestoreModal
+        isOpen={isRestoreModalOpen}
+        onClose={() => setIsRestoreModalOpen(false)}
+        onRestored={handleSnapshotRestored}
+      />
 
       {/* Borderless corner version indicator */}
       <div className="absolute bottom-4 left-6 text-[11px] text-zinc-600 pointer-events-none select-none">

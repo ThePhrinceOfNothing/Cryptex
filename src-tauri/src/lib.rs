@@ -1,12 +1,86 @@
 use std::fs;
-use std::path::PathBuf;
+use std::io::Write;
+use std::path::{Path, PathBuf};
+use std::time::{SystemTime, UNIX_EPOCH};
 use tauri::{AppHandle, Manager};
 
-#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
 pub struct EncryptedVault {
-    salt: String,
-    iv: String,
-    ciphertext: String,
+    pub salt: String,
+    pub iv: String,
+    pub ciphertext: String,
+}
+
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
+pub struct VaultSnapshotInfo {
+    pub filename: String,
+    pub timestamp: u64,
+    #[serde(rename = "sizeBytes")]
+    pub size_bytes: u64,
+    #[serde(rename = "isPreUpdate")]
+    pub is_pre_update: bool,
+    pub reason: String,
+}
+
+fn write_atomic(dest_path: &Path, data: &str) -> Result<(), String> {
+    let parent = dest_path
+        .parent()
+        .ok_or_else(|| "Failed to get parent directory".to_string())?;
+
+    if !parent.exists() {
+        fs::create_dir_all(parent).map_err(|e| e.to_string())?;
+    }
+
+    let millis = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_millis();
+
+    let file_stem = dest_path
+        .file_name()
+        .and_then(|n| n.to_str())
+        .unwrap_or("file");
+
+    let tmp_path = parent.join(format!(".{}.tmp.{}", file_stem, millis));
+
+    // 1. Write and sync to temporary file
+    {
+        let mut file = fs::File::create(&tmp_path).map_err(|e| e.to_string())?;
+        file.write_all(data.as_bytes()).map_err(|e| e.to_string())?;
+        file.sync_all().map_err(|e| e.to_string())?;
+    }
+
+    // 2. Keep .prev file if target already exists
+    let prev_path = parent.join(format!("{}.prev", file_stem));
+    if dest_path.exists() {
+        let _ = fs::copy(dest_path, &prev_path);
+    }
+
+    // 3. Atomically replace target
+    #[cfg(windows)]
+    {
+        let old_path = parent.join(format!(".{}.old.{}", file_stem, millis));
+        if dest_path.exists() {
+            fs::rename(dest_path, &old_path).map_err(|e| e.to_string())?;
+        }
+        if let Err(e) = fs::rename(&tmp_path, dest_path) {
+            if old_path.exists() {
+                let _ = fs::rename(&old_path, dest_path);
+            }
+            let _ = fs::remove_file(&tmp_path);
+            return Err(e.to_string());
+        }
+        if old_path.exists() {
+            let _ = fs::remove_file(&old_path);
+        }
+    }
+
+    #[cfg(not(windows))]
+    {
+        fs::rename(&tmp_path, dest_path).map_err(|e| e.to_string())?;
+    }
+
+    Ok(())
 }
 
 fn migrate_legacy_data(target_dir: &PathBuf) {
@@ -55,6 +129,97 @@ fn get_vault_path(app: &AppHandle) -> Result<PathBuf, String> {
     Ok(path)
 }
 
+fn get_backups_dir(app: &AppHandle) -> Result<PathBuf, String> {
+    let app_dir = app
+        .path()
+        .app_data_dir()
+        .map_err(|_| "Failed to get app data directory".to_string())?;
+    let backups_dir = app_dir.join("backups");
+    if !backups_dir.exists() {
+        fs::create_dir_all(&backups_dir).map_err(|e| e.to_string())?;
+    }
+    Ok(backups_dir)
+}
+
+fn prune_snapshots(backups_dir: &Path) {
+    if let Ok(entries) = fs::read_dir(backups_dir) {
+        let mut normal_snapshots = Vec::new();
+        let mut pre_update_snapshots = Vec::new();
+
+        for entry in entries.flatten() {
+            let path = entry.path();
+            if path.is_file() {
+                if let Some(name) = path.file_name().and_then(|n| n.to_str()) {
+                    if name.ends_with(".vault.bak") {
+                        if let Ok(meta) = entry.metadata() {
+                            let modified = meta.modified().unwrap_or(UNIX_EPOCH);
+                            if name.contains("pre-update") {
+                                pre_update_snapshots.push((path, modified));
+                            } else {
+                                normal_snapshots.push((path, modified));
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        normal_snapshots.sort_by(|a, b| b.1.cmp(&a.1));
+        pre_update_snapshots.sort_by(|a, b| b.1.cmp(&a.1));
+
+        // Keep 30 normal rolling backups
+        if normal_snapshots.len() > 30 {
+            for (path, _) in &normal_snapshots[30..] {
+                let _ = fs::remove_file(path);
+            }
+        }
+
+        // Keep up to 10 pre-update backups
+        if pre_update_snapshots.len() > 10 {
+            for (path, _) in &pre_update_snapshots[10..] {
+                let _ = fs::remove_file(path);
+            }
+        }
+    }
+}
+
+fn create_snapshot_internal(app: &AppHandle, reason: &str) -> Result<String, String> {
+    let vault_path = get_vault_path(app)?;
+    if !vault_path.exists() {
+        return Err("Cannot snapshot: vault does not exist".to_string());
+    }
+
+    let content = fs::read_to_string(&vault_path).map_err(|e| e.to_string())?;
+    if content.trim().is_empty() {
+        return Err("Cannot snapshot empty vault".to_string());
+    }
+
+    let payload: Result<EncryptedVault, _> = serde_json::from_str(&content);
+    let payload = payload.map_err(|e| format!("Vault content invalid, refusing to snapshot: {}", e))?;
+    if payload.ciphertext.is_empty() || payload.salt.is_empty() || payload.iv.is_empty() {
+        return Err("Vault content missing cryptographic fields".to_string());
+    }
+
+    let backups_dir = get_backups_dir(app)?;
+    let millis = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_millis();
+
+    let clean_reason: String = reason
+        .chars()
+        .filter(|c| c.is_alphanumeric() || *c == '-' || *c == '_')
+        .collect();
+
+    let filename = format!("vault-{}-{}.vault.bak", clean_reason, millis);
+    let snapshot_path = backups_dir.join(&filename);
+
+    write_atomic(&snapshot_path, &content)?;
+    prune_snapshots(&backups_dir);
+
+    Ok(filename)
+}
+
 #[tauri::command]
 fn vault_exists(app: AppHandle) -> Result<bool, String> {
     let path = get_vault_path(&app)?;
@@ -65,28 +230,183 @@ fn vault_exists(app: AppHandle) -> Result<bool, String> {
 fn save_vault(app: AppHandle, payload: EncryptedVault) -> Result<(), String> {
     let path = get_vault_path(&app)?;
     let data = serde_json::to_string(&payload).map_err(|e| e.to_string())?;
-    fs::write(path, data).map_err(|e| e.to_string())?;
+
+    // 1. Snapshot previous state if valid vault already exists on disk
+    if path.exists() {
+        let _ = create_snapshot_internal(&app, "auto");
+    }
+
+    // 2. Atomic write with fsync and .prev retention
+    write_atomic(&path, &data)?;
     Ok(())
 }
 
 #[tauri::command]
 fn load_vault(app: AppHandle) -> Result<EncryptedVault, String> {
     let path = get_vault_path(&app)?;
+
+    // 1. Try reading active vault
+    if path.exists() {
+        if let Ok(data) = fs::read_to_string(&path) {
+            if let Ok(payload) = serde_json::from_str::<EncryptedVault>(&data) {
+                if !payload.ciphertext.is_empty() && !payload.salt.is_empty() && !payload.iv.is_empty() {
+                    return Ok(payload);
+                }
+            }
+        }
+    }
+
+    // 2. Self-healing fallback: try data.vault.prev
+    if let Some(parent) = path.parent() {
+        let prev_path = parent.join("data.vault.prev");
+        if prev_path.exists() {
+            if let Ok(data) = fs::read_to_string(&prev_path) {
+                if let Ok(payload) = serde_json::from_str::<EncryptedVault>(&data) {
+                    if !payload.ciphertext.is_empty() && !payload.salt.is_empty() && !payload.iv.is_empty() {
+                        let _ = fs::copy(&prev_path, &path);
+                        eprintln!("[Tectoryx] Self-healed active vault from data.vault.prev");
+                        return Ok(payload);
+                    }
+                }
+            }
+        }
+    }
+
+    // 3. Self-healing fallback: try latest valid snapshot in backups/
+    if let Ok(backups_dir) = get_backups_dir(&app) {
+        if let Ok(entries) = fs::read_dir(&backups_dir) {
+            let mut snapshots: Vec<(PathBuf, SystemTime)> = Vec::new();
+            for entry in entries.flatten() {
+                let p = entry.path();
+                if p.is_file() && p.extension().map_or(false, |ext| ext == "bak") {
+                    if let Ok(meta) = p.metadata() {
+                        snapshots.push((p, meta.modified().unwrap_or(UNIX_EPOCH)));
+                    }
+                }
+            }
+            snapshots.sort_by(|a, b| b.1.cmp(&a.1));
+
+            for (snap_path, _) in snapshots {
+                if let Ok(data) = fs::read_to_string(&snap_path) {
+                    if let Ok(payload) = serde_json::from_str::<EncryptedVault>(&data) {
+                        if !payload.ciphertext.is_empty() && !payload.salt.is_empty() && !payload.iv.is_empty() {
+                            let _ = fs::copy(&snap_path, &path);
+                            eprintln!("[Tectoryx] Self-healed active vault from backup: {:?}", snap_path.file_name());
+                            return Ok(payload);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     if !path.exists() {
         return Err("Vault does not exist".to_string());
     }
-    let data = fs::read_to_string(path).map_err(|e| e.to_string())?;
-    let payload: EncryptedVault = serde_json::from_str(&data).map_err(|e| e.to_string())?;
-    Ok(payload)
+
+    Err("Vault is corrupted and no valid recovery snapshots could be restored".to_string())
 }
 
 #[tauri::command]
 fn delete_vault(app: AppHandle) -> Result<(), String> {
     let path = get_vault_path(&app)?;
     if path.exists() {
+        let _ = create_snapshot_internal(&app, "pre-erase");
         fs::remove_file(path).map_err(|e| e.to_string())?;
     }
     Ok(())
+}
+
+#[tauri::command]
+fn list_vault_snapshots(app: AppHandle) -> Result<Vec<VaultSnapshotInfo>, String> {
+    let backups_dir = get_backups_dir(&app)?;
+    let mut snapshots = Vec::new();
+
+    if let Ok(entries) = fs::read_dir(&backups_dir) {
+        for entry in entries.flatten() {
+            let path = entry.path();
+            if path.is_file() && path.extension().map_or(false, |ext| ext == "bak") {
+                if let Some(filename) = path.file_name().and_then(|n| n.to_str()) {
+                    if let Ok(meta) = path.metadata() {
+                        let modified = meta.modified().unwrap_or(UNIX_EPOCH);
+                        let timestamp_sec = modified
+                            .duration_since(UNIX_EPOCH)
+                            .unwrap_or_default()
+                            .as_secs();
+
+                        let is_pre_update = filename.contains("pre-update");
+                        let reason = if is_pre_update {
+                            "pre-update"
+                        } else if filename.contains("pre-restore") {
+                            "pre-restore"
+                        } else if filename.contains("pre-erase") {
+                            "pre-erase"
+                        } else if filename.contains("manual") {
+                            "manual"
+                        } else {
+                            "auto"
+                        };
+
+                        snapshots.push(VaultSnapshotInfo {
+                            filename: filename.to_string(),
+                            timestamp: timestamp_sec,
+                            size_bytes: meta.len(),
+                            is_pre_update,
+                            reason: reason.to_string(),
+                        });
+                    }
+                }
+            }
+        }
+    }
+
+    snapshots.sort_by(|a, b| b.timestamp.cmp(&a.timestamp));
+    Ok(snapshots)
+}
+
+#[tauri::command]
+fn restore_vault_snapshot(app: AppHandle, filename: String) -> Result<(), String> {
+    if filename.contains('/') || filename.contains('\\') || filename.contains("..") {
+        return Err("Invalid snapshot filename".to_string());
+    }
+
+    let backups_dir = get_backups_dir(&app)?;
+    let target_snapshot = backups_dir.join(&filename);
+
+    if !target_snapshot.exists() {
+        return Err("Snapshot file not found".to_string());
+    }
+
+    let content = fs::read_to_string(&target_snapshot).map_err(|e| e.to_string())?;
+    let payload: EncryptedVault = serde_json::from_str(&content)
+        .map_err(|e| format!("Snapshot data is corrupted or invalid: {}", e))?;
+
+    if payload.ciphertext.is_empty() || payload.salt.is_empty() || payload.iv.is_empty() {
+        return Err("Snapshot is missing required cryptographic fields".to_string());
+    }
+
+    let vault_path = get_vault_path(&app)?;
+
+    // Create a safety snapshot of the CURRENT vault before restoring
+    if vault_path.exists() {
+        let _ = create_snapshot_internal(&app, "pre-restore");
+    }
+
+    write_atomic(&vault_path, &content)?;
+
+    Ok(())
+}
+
+#[tauri::command]
+fn create_manual_snapshot(app: AppHandle, reason: Option<String>) -> Result<String, String> {
+    let r = reason.unwrap_or_else(|| "manual".to_string());
+    create_snapshot_internal(&app, &r)
+}
+
+#[tauri::command]
+fn create_pre_update_snapshot(app: AppHandle, version: String) -> Result<String, String> {
+    let reason = format!("pre-update-v{}", version);
+    create_snapshot_internal(&app, &reason)
 }
 
 #[derive(serde::Serialize, serde::Deserialize)]
@@ -121,7 +441,7 @@ fn get_config_path(app: &AppHandle) -> Result<PathBuf, String> {
 fn save_config(app: AppHandle, config: AppConfig) -> Result<(), String> {
     let path = get_config_path(&app)?;
     let data = serde_json::to_string(&config).map_err(|e| e.to_string())?;
-    fs::write(path, data).map_err(|e| e.to_string())?;
+    write_atomic(&path, &data)?;
     Ok(())
 }
 
@@ -152,7 +472,11 @@ pub fn run() {
             load_vault,
             delete_vault,
             save_config,
-            load_config
+            load_config,
+            list_vault_snapshots,
+            restore_vault_snapshot,
+            create_manual_snapshot,
+            create_pre_update_snapshot
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
