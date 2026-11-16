@@ -9,6 +9,17 @@ import {
 } from './crypto';
 import type { EncryptedPayload } from './crypto';
 
+export interface EnabledModules {
+  dashboard?: boolean;
+  notes?: boolean;
+  tasks?: boolean;
+  calendar?: boolean;
+  income?: boolean;
+  ambience?: boolean;
+  steganography?: boolean;
+  scratchpad?: boolean;
+}
+
 export interface VaultSettings {
   workspaceName: string;
   subtitle: string;
@@ -29,6 +40,10 @@ export interface VaultSettings {
   ambienceVolume?: number;
   decoyEnabled?: boolean;
   decoyPassword?: string;
+  enabledModules?: EnabledModules;
+  defaultLandingTab?: 'My Vault' | 'Notes' | 'Dashboard' | 'Tasks';
+  companionEnabled?: boolean;
+  zenMode?: boolean;
 }
 
 export type PetEvolution = 'ghost' | 'owl' | 'fox' | 'gargoyle';

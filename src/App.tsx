@@ -20,7 +20,7 @@ import { getCurrentWindow } from '@tauri-apps/api/window';
 
 function AppContent() {
   const { isLocked, vaultData } = useVault();
-  const [activeTab, setActiveTabState] = useState<string>('Dashboard');
+  const [activeTab, setActiveTabState] = useState<string>('My Vault');
   const [selectedCredentialId, setSelectedCredentialId] = useState<string | null>(null);
   const [isCreating, setIsCreating] = useState(false);
   const [isNotesGraphOpen, setIsNotesGraphOpen] = useState(false);
@@ -97,12 +97,14 @@ function AppContent() {
     }
   }, [vaultData?.settings?.theme]);
 
-  // Security measure: Reset active module to a safe default when locking
+  // Reset credential state and land on configured default tab on unlock
   useEffect(() => {
     if (isLocked) {
-      setActiveTabState('Dashboard');
       setSelectedCredentialId(null);
       setIsCreating(false);
+    } else if (vaultData) {
+      const defaultTab = vaultData.settings?.defaultLandingTab || 'My Vault';
+      setActiveTabState(defaultTab);
     }
   }, [isLocked]);
 

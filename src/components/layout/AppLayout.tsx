@@ -111,13 +111,19 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
   const workspaceName = vaultData?.settings?.workspaceName || 'My Workspace';
   const subtitle = vaultData?.settings?.subtitle || 'Personal Vault';
 
+  const enabledModules = vaultData?.settings?.enabledModules;
+  const isModuleEnabled = (key: string, defaultVal: boolean = true) => {
+    if (!enabledModules) return defaultVal;
+    return (enabledModules as any)[key] ?? defaultVal;
+  };
+
   const navItems = [
-    { name: 'Dashboard', icon: LayoutDashboard },
+    ...(isModuleEnabled('dashboard', true) ? [{ name: 'Dashboard', icon: LayoutDashboard }] : []),
     { name: 'My Vault', icon: Lock },
-    { name: 'Notes', icon: StickyNote },
-    { name: 'Tasks', icon: CheckSquare },
-    { name: 'Calendar', icon: Calendar },
-    { name: 'Income', icon: DollarSign },
+    ...(isModuleEnabled('notes', true) ? [{ name: 'Notes', icon: StickyNote }] : []),
+    ...(isModuleEnabled('tasks', true) ? [{ name: 'Tasks', icon: CheckSquare }] : []),
+    ...(isModuleEnabled('calendar', true) ? [{ name: 'Calendar', icon: Calendar }] : []),
+    ...(isModuleEnabled('income', true) ? [{ name: 'Income', icon: DollarSign }] : []),
   ];
 
   const hackerTheme = vaultData?.settings?.terminalHackerTheme;
@@ -420,41 +426,47 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
               })}
 
               <div className="mt-auto pt-3 border-t border-gray-200 dark:border-[#262626] flex flex-col space-y-0.5">
-                {!isSidebarCollapsed && (
+                {(isModuleEnabled('ambience', false) || isModuleEnabled('scratchpad', true) || isModuleEnabled('steganography', false)) && !isSidebarCollapsed && (
                   <span className="px-3 pb-1 text-[10px] font-mono text-gray-400 dark:text-zinc-500 uppercase tracking-wider font-semibold">
                     Tools
                   </span>
                 )}
 
                 {/* Focus Ambience Player */}
-                <AmbiencePlayer isCollapsed={isSidebarCollapsed} />
+                {isModuleEnabled('ambience', false) && (
+                  <AmbiencePlayer isCollapsed={isSidebarCollapsed} />
+                )}
 
                 {/* Quick Scratchpad */}
-                <button
-                  onClick={() => setIsScratchpadOpen(true)}
-                  className={`w-full flex items-center ${isSidebarCollapsed ? 'justify-center py-2' : 'justify-between px-3 py-1.5'} rounded-lg text-xs font-medium text-gray-600 dark:text-zinc-400 hover:text-gray-900 dark:hover:text-zinc-100 hover:bg-gray-100/70 dark:hover:bg-zinc-800/40 transition-colors active:scale-[0.97]`}
-                  title="Quick Scratchpad (Ctrl+Shift+Space)"
-                >
-                  <div className="flex items-center gap-3">
-                    <Sparkles size={17} strokeWidth={1.75} className="text-gray-500 dark:text-zinc-400 shrink-0" />
-                    {!isSidebarCollapsed && <span>Scratchpad</span>}
-                  </div>
-                  {!isSidebarCollapsed && (
-                    <span className="text-[10px] font-mono text-gray-400 dark:text-zinc-500 bg-gray-100 dark:bg-zinc-800/80 px-1 py-0.5 rounded border border-gray-200/60 dark:border-zinc-700/60">
-                      Ctrl+Shift+Space
-                    </span>
-                  )}
-                </button>
+                {isModuleEnabled('scratchpad', true) && (
+                  <button
+                    onClick={() => setIsScratchpadOpen(true)}
+                    className={`w-full flex items-center ${isSidebarCollapsed ? 'justify-center py-2' : 'justify-between px-3 py-1.5'} rounded-lg text-xs font-medium text-gray-600 dark:text-zinc-400 hover:text-gray-900 dark:hover:text-zinc-100 hover:bg-gray-100/70 dark:hover:bg-zinc-800/40 transition-colors active:scale-[0.97]`}
+                    title="Quick Scratchpad (Ctrl+Shift+Space)"
+                  >
+                    <div className="flex items-center gap-3">
+                      <Sparkles size={17} strokeWidth={1.75} className="text-gray-500 dark:text-zinc-400 shrink-0" />
+                      {!isSidebarCollapsed && <span>Scratchpad</span>}
+                    </div>
+                    {!isSidebarCollapsed && (
+                      <span className="text-[10px] font-mono text-gray-400 dark:text-zinc-500 bg-gray-100 dark:bg-zinc-800/80 px-1 py-0.5 rounded border border-gray-200/60 dark:border-zinc-700/60">
+                        Ctrl+Shift+Space
+                      </span>
+                    )}
+                  </button>
+                )}
 
                 {/* Steganography Studio */}
-                <button
-                  onClick={() => setIsSteganographyOpen(true)}
-                  className={`w-full flex items-center ${isSidebarCollapsed ? 'justify-center py-2' : 'gap-3 px-3 py-1.5'} rounded-lg text-xs font-medium text-gray-600 dark:text-zinc-400 hover:text-gray-900 dark:hover:text-zinc-100 hover:bg-gray-100/70 dark:hover:bg-zinc-800/40 transition-colors active:scale-[0.97]`}
-                  title="PNG Steganography Studio"
-                >
-                  <EyeOff size={17} strokeWidth={1.75} className="text-gray-500 dark:text-zinc-400 shrink-0" />
-                  {!isSidebarCollapsed && <span>Steganography</span>}
-                </button>
+                {isModuleEnabled('steganography', false) && (
+                  <button
+                    onClick={() => setIsSteganographyOpen(true)}
+                    className={`w-full flex items-center ${isSidebarCollapsed ? 'justify-center py-2' : 'gap-3 px-3 py-1.5'} rounded-lg text-xs font-medium text-gray-600 dark:text-zinc-400 hover:text-gray-900 dark:hover:text-zinc-100 hover:bg-gray-100/70 dark:hover:bg-zinc-800/40 transition-colors active:scale-[0.97]`}
+                    title="PNG Steganography Studio"
+                  >
+                    <EyeOff size={17} strokeWidth={1.75} className="text-gray-500 dark:text-zinc-400 shrink-0" />
+                    {!isSidebarCollapsed && <span>Steganography</span>}
+                  </button>
+                )}
 
                 <button
                   onClick={() => setActiveTab('Settings')}
@@ -539,7 +551,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
           </div>
         </main>
 
-        <GhostPet activeTab={activeTab} />
+        {vaultData?.settings?.companionEnabled && <GhostPet activeTab={activeTab} />}
       </div>
     </>
   );

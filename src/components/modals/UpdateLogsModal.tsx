@@ -6,6 +6,13 @@ import { CheckCircle2, ChevronDown } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 
 const LOCAL_RELEASE_NOTES: Record<string, string> = {
+  '1.5.5': `### What's New in Tectoryx v1.5.5
+
+#### ADHD Focus & Modular Workspace
+- **Modular Sidebar Architecture:** Turn off tools you do not use (Tasks, Calendar, Income, Ambience, Steganography) from Settings to eliminate visual noise.
+- **Direct Vault Landing:** The app now opens directly into **My Vault** (Passwords) on unlock by default instead of dumping you onto the busy dashboard.
+- **Distraction-Free Quiet Defaults:** Virtual pet companion, speech bubbles, and XP trackers are disabled by default for an instantly calm and quiet environment.
+- **Simplified Dashboard:** The dashboard now focuses cleanly on security score and quick actions, keeping gamification and mood logs out of the way unless opted into.`,
   '1.5.4': `### What's New in Tectoryx v1.5.4
 
 #### Vault Preservation & Recovery

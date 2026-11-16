@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { User, Settings as SettingsIcon, Shield, Palette, Database, Upload, Download, Trash2, KeyRound, X, CheckCircle2, Info, Volume2, History } from 'lucide-react';
+import { User, Settings as SettingsIcon, Shield, Palette, Database, Upload, Download, Trash2, KeyRound, X, CheckCircle2, Info, Volume2, History, Sliders } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useVault } from '../../context/VaultContext';
 import { useToast } from '../../context/ToastContext';
@@ -290,6 +290,105 @@ export const Settings: React.FC = () => {
             </div>
           </section>
 
+          {/* Focus & Workspace Modules (ADHD-Friendly Calm Mode) */}
+          <section>
+            <div className="flex items-center gap-2 mb-2.5 text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-zinc-400">
+              <Sliders className="w-3.5 h-3.5 text-gray-400 dark:text-zinc-500" strokeWidth={1.75} />
+              <span>Focus & Workspace Modules</span>
+            </div>
+            <div className="bg-white dark:bg-[#121214] border border-gray-200 dark:border-[#27272a] rounded-xl p-5 shadow-2xs space-y-5">
+              
+              {/* Default Landing Screen */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                  <h4 className="text-xs sm:text-sm font-medium text-gray-900 dark:text-zinc-100">Default Unlock Screen</h4>
+                  <p className="text-[11px] text-gray-500 dark:text-zinc-500 mt-0.5">Which screen immediately opens when unlocking the vault.</p>
+                </div>
+                <select
+                  value={vaultData?.settings?.defaultLandingTab || 'My Vault'}
+                  onChange={(e) => handleUpdate({ defaultLandingTab: e.target.value as any })}
+                  className="bg-gray-50 dark:bg-[#18181b] border border-gray-200 dark:border-[#27272a] rounded-lg px-3 py-1.5 text-gray-900 dark:text-zinc-100 text-xs sm:text-sm font-medium focus:outline-none focus:border-zinc-900 dark:focus:border-white transition-colors w-44"
+                >
+                  <option value="My Vault">My Vault (Passwords)</option>
+                  <option value="Notes">Notes Editor</option>
+                  <option value="Dashboard">Dashboard</option>
+                  <option value="Tasks">Tasks</option>
+                </select>
+              </div>
+
+              {/* Virtual Companion / Distraction Reducer */}
+              <div className="pt-3 border-t border-gray-100 dark:border-white/5 flex items-center justify-between gap-4">
+                <div>
+                  <h4 className="text-xs sm:text-sm font-medium text-gray-900 dark:text-zinc-100">Virtual Companion & Gamification</h4>
+                  <p className="text-[11px] text-gray-500 dark:text-zinc-500 mt-0.5">Show the floating pet avatar, speech bubble quotes, and XP progress.</p>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={vaultData?.settings?.companionEnabled ?? false}
+                    onChange={(e) => handleUpdate({ companionEnabled: e.target.checked })}
+                    className="sr-only peer"
+                  />
+                  <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-zinc-800 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:border-zinc-700 peer-checked:bg-blue-600"></div>
+                </label>
+              </div>
+
+              {/* Active Modules Grid */}
+              <div className="pt-3 border-t border-gray-100 dark:border-white/5 space-y-3">
+                <div>
+                  <h4 className="text-xs sm:text-sm font-medium text-gray-900 dark:text-zinc-100">Active Sidebar Modules</h4>
+                  <p className="text-[11px] text-gray-500 dark:text-zinc-500 mt-0.5">Turn off tools you do not use to eliminate noise and keep your workspace quiet.</p>
+                </div>
+                
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
+                  {[
+                    { key: 'dashboard', label: 'Dashboard Overview', desc: 'Activity summary and greeting' },
+                    { key: 'notes', label: 'Secure Notes', desc: 'Encrypted notes & knowledge graph' },
+                    { key: 'tasks', label: 'Tasks & Kanban', desc: 'Urgency board & todo lists' },
+                    { key: 'calendar', label: 'Calendar', desc: 'Events and reminders' },
+                    { key: 'income', label: 'Income & Finances', desc: 'Wallets and transaction logs' },
+                    { key: 'scratchpad', label: 'Quick Scratchpad', desc: 'Ctrl+Shift+Space quick-capture' },
+                    { key: 'ambience', label: 'Focus Ambience', desc: 'Synthetic rain and noise audio' },
+                    { key: 'steganography', label: 'Steganography Studio', desc: 'PNG carrier image encoding' },
+                  ].map((module) => {
+                    const isEnabled = (vaultData?.settings?.enabledModules as any)?.[module.key] ?? (
+                      module.key === 'ambience' || module.key === 'steganography' ? false : true
+                    );
+                    return (
+                      <div
+                        key={module.key}
+                        className="flex items-center justify-between p-3 rounded-lg border border-gray-100 dark:border-[#27272a] bg-gray-50/50 dark:bg-[#161618] hover:border-gray-200 dark:hover:border-zinc-700 transition-colors"
+                      >
+                        <div className="min-w-0 pr-2">
+                          <p className="text-xs font-semibold text-gray-900 dark:text-zinc-200 truncate">{module.label}</p>
+                          <p className="text-[10px] text-gray-500 dark:text-zinc-500 truncate">{module.desc}</p>
+                        </div>
+                        <label className="relative inline-flex items-center cursor-pointer shrink-0">
+                          <input
+                            type="checkbox"
+                            checked={isEnabled}
+                            onChange={(e) => {
+                              const current = vaultData?.settings?.enabledModules || {};
+                              handleUpdate({
+                                enabledModules: {
+                                  ...current,
+                                  [module.key]: e.target.checked
+                                }
+                              });
+                            }}
+                            className="sr-only peer"
+                          />
+                          <div className="w-8 h-4 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-zinc-800 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all dark:border-zinc-700 peer-checked:bg-blue-600"></div>
+                        </label>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+            </div>
+          </section>
+
           {/* Appearance & Preferences */}
           <section>
             <div className="flex items-center gap-2 mb-2.5 text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-zinc-400">
@@ -360,21 +459,23 @@ export const Settings: React.FC = () => {
                 </select>
               </div>
 
-              <div className="pt-3 border-t border-gray-100 dark:border-white/5 flex items-center justify-between gap-4">
-                <div>
-                  <h4 className="text-xs sm:text-sm font-medium text-gray-900 dark:text-zinc-100">Companion Behavior</h4>
-                  <p className="text-[11px] text-gray-500 dark:text-zinc-500 mt-0.5">Control how your ghost companion behaves.</p>
+              {vaultData?.settings?.companionEnabled && (
+                <div className="pt-3 border-t border-gray-100 dark:border-white/5 flex items-center justify-between gap-4">
+                  <div>
+                    <h4 className="text-xs sm:text-sm font-medium text-gray-900 dark:text-zinc-100">Companion Movement</h4>
+                    <p className="text-[11px] text-gray-500 dark:text-zinc-500 mt-0.5">Control how your ghost companion moves.</p>
+                  </div>
+                  <select
+                    value={vaultData?.settings?.ghostBehavior || 'random'}
+                    onChange={(e) => handleUpdate({ ghostBehavior: e.target.value as VaultSettings['ghostBehavior'] })}
+                    className="bg-gray-50 dark:bg-[#18181b] border border-gray-200 dark:border-[#27272a] rounded-lg px-3 py-1.5 text-gray-900 dark:text-zinc-100 text-xs sm:text-sm font-medium focus:outline-none focus:border-zinc-900 dark:focus:border-white transition-colors w-36"
+                  >
+                    <option value="random">Random Spawns</option>
+                    <option value="fixed">Fixed Position</option>
+                    <option value="draggable">Draggable</option>
+                  </select>
                 </div>
-                <select
-                  value={vaultData?.settings?.ghostBehavior || 'random'}
-                  onChange={(e) => handleUpdate({ ghostBehavior: e.target.value as VaultSettings['ghostBehavior'] })}
-                  className="bg-gray-50 dark:bg-[#18181b] border border-gray-200 dark:border-[#27272a] rounded-lg px-3 py-1.5 text-gray-900 dark:text-zinc-100 text-xs sm:text-sm font-medium focus:outline-none focus:border-zinc-900 dark:focus:border-white transition-colors w-36"
-                >
-                  <option value="random">Random Spawns</option>
-                  <option value="fixed">Fixed Position</option>
-                  <option value="draggable">Draggable</option>
-                </select>
-              </div>
+              )}
 
               <div className="pt-3 border-t border-gray-100 dark:border-white/5 flex items-center justify-between gap-4">
                 <div>

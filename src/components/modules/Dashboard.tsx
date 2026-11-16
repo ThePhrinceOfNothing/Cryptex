@@ -59,6 +59,13 @@ export const Dashboard: React.FC<{ onNavigate?: (tab: string) => void }> = ({ on
   const [moodNote, setMoodNote] = useState<string>('');
   const [isLoggingMood, setIsLoggingMood] = useState(false);
 
+  const isCompanionEnabled = vaultData?.settings?.companionEnabled ?? false;
+  const enabledModules = vaultData?.settings?.enabledModules;
+  const isModuleEnabled = (key: string, defaultVal: boolean = true) => {
+    if (!enabledModules) return defaultVal;
+    return (enabledModules as any)[key] ?? defaultVal;
+  };
+
   const greeting = useMemo(() => {
     const hour = new Date().getHours();
     if (hour < 12) return 'Good morning';
@@ -173,62 +180,66 @@ export const Dashboard: React.FC<{ onNavigate?: (tab: string) => void }> = ({ on
         >
           {greeting}, {vaultData?.settings?.workspaceName || 'User'}
         </motion.h1>
-        <p className="text-xs text-gray-500 dark:text-zinc-500 mt-1">Here is a quick overview of your workspace and companion stats.</p>
+        <p className="text-xs text-gray-500 dark:text-zinc-500 mt-1">
+          {isCompanionEnabled ? 'Here is a quick overview of your workspace and companion stats.' : 'Overview and security status of your encrypted workspace.'}
+        </p>
       </div>
 
       {/* Quick Action Bar */}
       <div className="flex flex-wrap gap-2 sm:gap-2.5 mb-6 shrink-0">
         <ActionButton icon={Lock} label="New Entry" onClick={() => onNavigate?.('My Vault')} />
-        <ActionButton icon={FileText} label="New Note" onClick={() => onNavigate?.('Notes')} />
-        <ActionButton icon={CheckSquare} label="New Task" onClick={() => onNavigate?.('Tasks')} />
-        <ActionButton icon={Wallet} label="Add Transaction" onClick={() => onNavigate?.('Income')} />
+        {isModuleEnabled('notes', true) && <ActionButton icon={FileText} label="New Note" onClick={() => onNavigate?.('Notes')} />}
+        {isModuleEnabled('tasks', true) && <ActionButton icon={CheckSquare} label="New Task" onClick={() => onNavigate?.('Tasks')} />}
+        {isModuleEnabled('income', true) && <ActionButton icon={Wallet} label="Add Transaction" onClick={() => onNavigate?.('Income')} />}
       </div>
 
       {/* Main Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 pb-8">
         
         {/* Companion Progression Card */}
-        <div className="col-span-1 md:col-span-2 lg:col-span-2 bg-white dark:bg-[#141416] border border-gray-200 dark:border-[#262626] p-5 rounded-xl shadow-2xs flex flex-col justify-between group hover:border-gray-300 dark:hover:border-zinc-700 transition-colors">
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-accent" strokeWidth={1.75} />
-              <h3 className="font-semibold text-xs text-gray-900 dark:text-white uppercase tracking-wider">Companion Sync</h3>
-            </div>
-            <span className="text-[11px] font-mono text-accent bg-accent/10 px-2 py-0.5 rounded border border-accent/20">
-              Level {levelInfo.level}
-            </span>
-          </div>
-
-          <div className="flex items-center justify-between py-2">
-            <div>
-              <p className="text-lg font-bold text-gray-900 dark:text-white">
-                {EVOLUTION_NAMES[levelInfo.evolution]}
-              </p>
-              <p className="text-xs text-gray-500 dark:text-zinc-400">
-                Next evolution unlocks at Level {levelInfo.level < 5 ? 5 : levelInfo.level < 10 ? 10 : levelInfo.level < 20 ? 20 : 50}
-              </p>
-            </div>
-            <div className="text-right">
-              <span className="text-xs font-mono font-bold text-gray-900 dark:text-zinc-100 tabular-nums">
-                {levelInfo.xpInCurrentLevel} / {levelInfo.xpForNextLevel} XP
+        {isCompanionEnabled && (
+          <div className="col-span-1 md:col-span-2 lg:col-span-2 bg-white dark:bg-[#141416] border border-gray-200 dark:border-[#262626] p-5 rounded-xl shadow-2xs flex flex-col justify-between group hover:border-gray-300 dark:hover:border-zinc-700 transition-colors">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-accent" strokeWidth={1.75} />
+                <h3 className="font-semibold text-xs text-gray-900 dark:text-white uppercase tracking-wider">Companion Sync</h3>
+              </div>
+              <span className="text-[11px] font-mono text-accent bg-accent/10 px-2 py-0.5 rounded border border-accent/20">
+                Level {levelInfo.level}
               </span>
-              <p className="text-[10px] text-gray-400">Total: {levelInfo.xp} XP</p>
             </div>
-          </div>
 
-          <div className="space-y-1.5 pt-1">
-            <div className="w-full bg-gray-100 dark:bg-zinc-800 h-2 rounded-full overflow-hidden">
-              <div 
-                className="bg-accent h-full rounded-full transition-all duration-300"
-                style={{ width: `${levelInfo.progressPercent}%` }}
-              />
+            <div className="flex items-center justify-between py-2">
+              <div>
+                <p className="text-lg font-bold text-gray-900 dark:text-white">
+                  {EVOLUTION_NAMES[levelInfo.evolution]}
+                </p>
+                <p className="text-xs text-gray-500 dark:text-zinc-400">
+                  Next evolution unlocks at Level {levelInfo.level < 5 ? 5 : levelInfo.level < 10 ? 10 : levelInfo.level < 20 ? 20 : 50}
+                </p>
+              </div>
+              <div className="text-right">
+                <span className="text-xs font-mono font-bold text-gray-900 dark:text-zinc-100 tabular-nums">
+                  {levelInfo.xpInCurrentLevel} / {levelInfo.xpForNextLevel} XP
+                </span>
+                <p className="text-[10px] text-gray-400">Total: {levelInfo.xp} XP</p>
+              </div>
             </div>
-            <div className="flex justify-between text-[10px] text-gray-400">
-              <span>XP Progress</span>
-              <span>{levelInfo.progressPercent}%</span>
+
+            <div className="space-y-1.5 pt-1">
+              <div className="w-full bg-gray-100 dark:bg-zinc-800 h-2 rounded-full overflow-hidden">
+                <div 
+                  className="bg-accent h-full rounded-full transition-all duration-300"
+                  style={{ width: `${levelInfo.progressPercent}%` }}
+                />
+              </div>
+              <div className="flex justify-between text-[10px] text-gray-400">
+                <span>XP Progress</span>
+                <span>{levelInfo.progressPercent}%</span>
+              </div>
             </div>
           </div>
-        </div>
+        )}
 
         {/* Vault Security Score */}
         <div className="col-span-1 md:col-span-1 lg:col-span-1 bg-white dark:bg-[#141416] border border-gray-200 dark:border-[#262626] p-5 rounded-xl shadow-2xs flex flex-col justify-between group hover:border-gray-300 dark:hover:border-zinc-700 transition-colors">
@@ -307,132 +318,134 @@ export const Dashboard: React.FC<{ onNavigate?: (tab: string) => void }> = ({ on
         </div>
 
         {/* Daily Mood & Energy Check-in + Sparkline */}
-        <div className="col-span-1 md:col-span-2 lg:col-span-2 bg-white dark:bg-[#141416] border border-gray-200 dark:border-[#262626] p-5 rounded-xl shadow-2xs flex flex-col justify-between group hover:border-gray-300 dark:hover:border-zinc-700 transition-colors">
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2">
-              <Zap className="w-4 h-4 text-amber-500" strokeWidth={1.75} />
-              <h3 className="font-semibold text-xs text-gray-900 dark:text-white uppercase tracking-wider">
-                Daily Energy & Mood Check-In
-              </h3>
+        {isCompanionEnabled && (
+          <div className="col-span-1 md:col-span-2 lg:col-span-2 bg-white dark:bg-[#141416] border border-gray-200 dark:border-[#262626] p-5 rounded-xl shadow-2xs flex flex-col justify-between group hover:border-gray-300 dark:hover:border-zinc-700 transition-colors">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <Zap className="w-4 h-4 text-amber-500" strokeWidth={1.75} />
+                <h3 className="font-semibold text-xs text-gray-900 dark:text-white uppercase tracking-wider">
+                  Daily Energy & Mood Check-In
+                </h3>
+              </div>
+              {todayMoodLog && (
+                <span className="text-[11px] text-emerald-500 font-medium flex items-center gap-1">
+                  <CheckCircle2 className="w-3.5 h-3.5" /> Logged Today
+                </span>
+              )}
             </div>
-            {todayMoodLog && (
-              <span className="text-[11px] text-emerald-500 font-medium flex items-center gap-1">
-                <CheckCircle2 className="w-3.5 h-3.5" /> Logged Today
-              </span>
+
+            {todayMoodLog ? (
+              <div className="py-2 space-y-3">
+                <div className="flex items-center justify-between bg-gray-50 dark:bg-zinc-900/60 p-3 rounded-lg border border-gray-100 dark:border-zinc-800">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-amber-500/10 rounded-lg text-amber-500">
+                      <Zap className="w-5 h-5 fill-amber-500" />
+                    </div>
+                    <div>
+                      <p className="text-xs font-semibold text-gray-900 dark:text-zinc-100">
+                        Energy Level {todayMoodLog.rating}/5 &middot; {todayMoodLog.mood}
+                      </p>
+                      {todayMoodLog.note && (
+                        <p className="text-[11px] text-gray-500 dark:text-zinc-400 mt-0.5">
+                          "{todayMoodLog.note}"
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* 7-day sparkline */}
+                <div>
+                  <p className="text-[10px] text-gray-400 uppercase tracking-wider mb-1.5">7-Day Energy Trend</p>
+                  <div className="flex items-end gap-2 h-10 pt-1">
+                    {pastMoodLogs.map((p, idx) => {
+                      const heightPercent = p.entry.rating > 0 ? (p.entry.rating / 5) * 100 : 8;
+                      const isToday = idx === pastMoodLogs.length - 1;
+                      return (
+                        <div key={idx} className="flex-1 flex flex-col items-center gap-1">
+                          <div 
+                            className={`w-full rounded-xs transition-all ${
+                              p.entry.rating > 0
+                                ? isToday ? 'bg-accent' : 'bg-amber-400/80 dark:bg-amber-500/80'
+                                : 'bg-gray-200 dark:bg-zinc-800'
+                            }`}
+                            style={{ height: `${heightPercent}%` }}
+                            title={`${p.date}: ${p.entry.mood} (${p.entry.rating}/5)`}
+                          />
+                          <span className="text-[9px] text-gray-400 font-mono">
+                            {p.date.split('-').slice(1).join('/')}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="py-2 space-y-3">
+                <p className="text-xs text-gray-500 dark:text-zinc-400">
+                  5-second check-in: rate your focus and energy to earn +15 XP.
+                </p>
+
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-[11px] text-gray-500 dark:text-zinc-400 w-16">Energy:</span>
+                    <div className="flex items-center gap-1.5">
+                      {[1, 2, 3, 4, 5].map((lvl) => (
+                        <button
+                          key={lvl}
+                          onClick={() => {
+                            playKeyClick();
+                            setSelectedEnergy(lvl);
+                          }}
+                          className={`w-7 h-7 rounded flex items-center justify-center text-xs font-semibold border transition-all ${
+                            selectedEnergy >= lvl
+                              ? 'bg-amber-500/15 border-amber-500/50 text-amber-500'
+                              : 'bg-gray-100 dark:bg-zinc-800 border-transparent text-gray-400'
+                          }`}
+                        >
+                          <Zap className={`w-3.5 h-3.5 ${selectedEnergy >= lvl ? 'fill-amber-500' : ''}`} />
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <span className="text-[11px] text-gray-500 dark:text-zinc-400 w-16">Mood:</span>
+                    <div className="flex flex-wrap gap-1">
+                      {moodOptions.map((m) => (
+                        <button
+                          key={m}
+                          onClick={() => {
+                            playKeyClick();
+                            setSelectedMood(m);
+                          }}
+                          className={`px-2 py-0.5 rounded text-[11px] font-medium border transition-colors ${
+                            selectedMood === m
+                              ? 'bg-accent text-white border-accent'
+                              : 'bg-gray-50 dark:bg-zinc-800/80 border-gray-200 dark:border-zinc-700 text-gray-700 dark:text-zinc-300 hover:bg-gray-100'
+                          }`}
+                        >
+                          {m}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="pt-2 flex justify-end">
+                  <button
+                    onClick={handleSaveMood}
+                    disabled={isLoggingMood}
+                    className="px-3.5 py-1.5 text-xs font-medium rounded-lg bg-accent text-white hover:opacity-95 shadow-xs transition-transform active:scale-[0.98]"
+                  >
+                    Log Daily Mood (+15 XP)
+                  </button>
+                </div>
+              </div>
             )}
           </div>
-
-          {todayMoodLog ? (
-            <div className="py-2 space-y-3">
-              <div className="flex items-center justify-between bg-gray-50 dark:bg-zinc-900/60 p-3 rounded-lg border border-gray-100 dark:border-zinc-800">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-amber-500/10 rounded-lg text-amber-500">
-                    <Zap className="w-5 h-5 fill-amber-500" />
-                  </div>
-                  <div>
-                    <p className="text-xs font-semibold text-gray-900 dark:text-zinc-100">
-                      Energy Level {todayMoodLog.rating}/5 &middot; {todayMoodLog.mood}
-                    </p>
-                    {todayMoodLog.note && (
-                      <p className="text-[11px] text-gray-500 dark:text-zinc-400 mt-0.5">
-                        "{todayMoodLog.note}"
-                      </p>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              {/* 7-day sparkline */}
-              <div>
-                <p className="text-[10px] text-gray-400 uppercase tracking-wider mb-1.5">7-Day Energy Trend</p>
-                <div className="flex items-end gap-2 h-10 pt-1">
-                  {pastMoodLogs.map((p, idx) => {
-                    const heightPercent = p.entry.rating > 0 ? (p.entry.rating / 5) * 100 : 8;
-                    const isToday = idx === pastMoodLogs.length - 1;
-                    return (
-                      <div key={idx} className="flex-1 flex flex-col items-center gap-1">
-                        <div 
-                          className={`w-full rounded-xs transition-all ${
-                            p.entry.rating > 0
-                              ? isToday ? 'bg-accent' : 'bg-amber-400/80 dark:bg-amber-500/80'
-                              : 'bg-gray-200 dark:bg-zinc-800'
-                          }`}
-                          style={{ height: `${heightPercent}%` }}
-                          title={`${p.date}: ${p.entry.mood} (${p.entry.rating}/5)`}
-                        />
-                        <span className="text-[9px] text-gray-400 font-mono">
-                          {p.date.split('-').slice(1).join('/')}
-                        </span>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            </div>
-          ) : (
-            <div className="py-2 space-y-3">
-              <p className="text-xs text-gray-500 dark:text-zinc-400">
-                5-second check-in: rate your focus and energy to earn +15 XP.
-              </p>
-
-              <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <span className="text-[11px] text-gray-500 dark:text-zinc-400 w-16">Energy:</span>
-                  <div className="flex items-center gap-1.5">
-                    {[1, 2, 3, 4, 5].map((lvl) => (
-                      <button
-                        key={lvl}
-                        onClick={() => {
-                          playKeyClick();
-                          setSelectedEnergy(lvl);
-                        }}
-                        className={`w-7 h-7 rounded flex items-center justify-center text-xs font-semibold border transition-all ${
-                          selectedEnergy >= lvl
-                            ? 'bg-amber-500/15 border-amber-500/50 text-amber-500'
-                            : 'bg-gray-100 dark:bg-zinc-800 border-transparent text-gray-400'
-                        }`}
-                      >
-                        <Zap className={`w-3.5 h-3.5 ${selectedEnergy >= lvl ? 'fill-amber-500' : ''}`} />
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <span className="text-[11px] text-gray-500 dark:text-zinc-400 w-16">Mood:</span>
-                  <div className="flex flex-wrap gap-1">
-                    {moodOptions.map((m) => (
-                      <button
-                        key={m}
-                        onClick={() => {
-                          playKeyClick();
-                          setSelectedMood(m);
-                        }}
-                        className={`px-2 py-0.5 rounded text-[11px] font-medium border transition-colors ${
-                          selectedMood === m
-                            ? 'bg-accent text-white border-accent'
-                            : 'bg-gray-50 dark:bg-zinc-800/80 border-gray-200 dark:border-zinc-700 text-gray-700 dark:text-zinc-300 hover:bg-gray-100'
-                        }`}
-                      >
-                        {m}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              <div className="pt-2 flex justify-end">
-                <button
-                  onClick={handleSaveMood}
-                  disabled={isLoggingMood}
-                  className="px-3.5 py-1.5 text-xs font-medium rounded-lg bg-accent text-white hover:opacity-95 shadow-xs transition-transform active:scale-[0.98]"
-                >
-                  Log Daily Mood (+15 XP)
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
+        )}
 
         {/* Activity Heatmap (90 Days) */}
         <div className="col-span-1 md:col-span-2 lg:col-span-2 bg-white dark:bg-[#141416] border border-gray-200 dark:border-[#262626] p-5 rounded-xl shadow-2xs group hover:border-gray-300 dark:hover:border-zinc-700 transition-colors flex flex-col justify-between">
@@ -474,47 +487,49 @@ export const Dashboard: React.FC<{ onNavigate?: (tab: string) => void }> = ({ on
         </div>
 
         {/* Pixel Achievement Badges Showcase */}
-        <div className="col-span-1 md:col-span-2 lg:col-span-4 bg-white dark:bg-[#141416] border border-gray-200 dark:border-[#262626] p-5 rounded-xl shadow-2xs group hover:border-gray-300 dark:hover:border-zinc-700 transition-colors">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <Award className="w-4 h-4 text-accent" strokeWidth={1.75} />
-              <h3 className="font-semibold text-xs text-gray-900 dark:text-white uppercase tracking-wider">
-                Achievements ({unlockedBadgesSet.size} / {BADGE_DEFINITIONS.length})
-              </h3>
+        {isCompanionEnabled && (
+          <div className="col-span-1 md:col-span-2 lg:col-span-4 bg-white dark:bg-[#141416] border border-gray-200 dark:border-[#262626] p-5 rounded-xl shadow-2xs group hover:border-gray-300 dark:hover:border-zinc-700 transition-colors">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <Award className="w-4 h-4 text-accent" strokeWidth={1.75} />
+                <h3 className="font-semibold text-xs text-gray-900 dark:text-white uppercase tracking-wider">
+                  Achievements ({unlockedBadgesSet.size} / {BADGE_DEFINITIONS.length})
+                </h3>
+              </div>
+              <span className="text-[11px] text-gray-400 font-medium">Retro Badges</span>
             </div>
-            <span className="text-[11px] text-gray-400 font-medium">Retro Badges</span>
-          </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2.5">
-            {BADGE_DEFINITIONS.map((badge) => {
-              const isUnlocked = unlockedBadgesSet.has(badge.id);
-              const BadgeIcon = BADGE_ICONS[badge.icon] || Award;
-              return (
-                <div
-                  key={badge.id}
-                  className={`p-3 rounded-lg border text-left flex flex-col justify-between transition-all ${
-                    isUnlocked
-                      ? 'bg-accent/5 border-accent/30 dark:bg-accent/10 dark:border-accent/30 text-gray-900 dark:text-zinc-100 shadow-2xs'
-                      : 'bg-gray-50/60 dark:bg-zinc-900/40 border-gray-200 dark:border-zinc-800/80 text-gray-400 dark:text-zinc-600 opacity-60'
-                  }`}
-                >
-                  <div className="flex items-center justify-between mb-2">
-                    <span className={`text-[10px] uppercase font-mono font-bold tracking-wider ${isUnlocked ? 'text-accent' : 'text-gray-400 dark:text-zinc-500'}`}>
-                      {isUnlocked ? 'Unlocked' : 'Locked'}
-                    </span>
-                    <BadgeIcon className={`w-3.5 h-3.5 ${isUnlocked ? 'text-accent' : 'text-gray-400 dark:text-zinc-500'}`} strokeWidth={1.75} />
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2.5">
+              {BADGE_DEFINITIONS.map((badge) => {
+                const isUnlocked = unlockedBadgesSet.has(badge.id);
+                const BadgeIcon = BADGE_ICONS[badge.icon] || Award;
+                return (
+                  <div
+                    key={badge.id}
+                    className={`p-3 rounded-lg border text-left flex flex-col justify-between transition-all ${
+                      isUnlocked
+                        ? 'bg-accent/5 border-accent/30 dark:bg-accent/10 dark:border-accent/30 text-gray-900 dark:text-zinc-100 shadow-2xs'
+                        : 'bg-gray-50/60 dark:bg-zinc-900/40 border-gray-200 dark:border-zinc-800/80 text-gray-400 dark:text-zinc-600 opacity-60'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <span className={`text-[10px] uppercase font-mono font-bold tracking-wider ${isUnlocked ? 'text-accent' : 'text-gray-400 dark:text-zinc-500'}`}>
+                        {isUnlocked ? 'Unlocked' : 'Locked'}
+                      </span>
+                      <BadgeIcon className={`w-3.5 h-3.5 ${isUnlocked ? 'text-accent' : 'text-gray-400 dark:text-zinc-500'}`} strokeWidth={1.75} />
+                    </div>
+                    <div>
+                      <p className="text-xs font-semibold leading-tight text-gray-900 dark:text-zinc-100">{badge.name}</p>
+                      <p className="text-[10px] text-gray-500 dark:text-zinc-400 mt-0.5 line-clamp-2 leading-relaxed">
+                        {badge.description}
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-xs font-semibold leading-tight text-gray-900 dark:text-zinc-100">{badge.name}</p>
-                    <p className="text-[10px] text-gray-500 dark:text-zinc-400 mt-0.5 line-clamp-2 leading-relaxed">
-                      {badge.description}
-                    </p>
-                  </div>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
           </div>
-        </div>
+        )}
 
       </div>
     </div>

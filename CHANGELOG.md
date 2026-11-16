@@ -2,6 +2,14 @@
 
 All notable changes to Tectoryx are documented in this file.
 
+## [1.5.5] - 2026-11-16
+
+### Added
+- **Modular Workspace Architecture:** Complete user control over active modules. Toggle off Tasks, Calendar, Income, Ambience, or Steganography in Settings to keep the sidebar minimal and distraction-free.
+- **Configurable Default Landing Screen:** Choose which view opens immediately upon unlocking the vault (`My Vault`, `Notes`, `Dashboard`, or `Tasks`), defaulting directly to `My Vault`.
+- **Distraction-Free Quiet Defaults:** Virtual pet companion, speech bubbles, and gamification XP cards are now disabled by default, transforming Tectoryx into a silent, calm, and focused cryptographic safehouse.
+- **Cleaned Dashboard:** Mood logging and achievement badge sections now only show if companion gamification is explicitly enabled, keeping the dashboard focused on vault security and quick actions.
+
 ## [1.5.4] - 2026-11-16
 
 ### Added

@@ -16,6 +16,12 @@ import { Sparkles, Gamepad2, X, ChevronRight, Moon, Crown, Headphones, Check } f
 
 export const GhostPet: React.FC<{ activeTab: string }> = ({ activeTab }) => {
   const { vaultData, updateVaultData } = useVault();
+  
+  // Distraction-free guard: if companion is not explicitly enabled, render nothing
+  if (!vaultData?.settings?.companionEnabled) {
+    return null;
+  }
+
   const ghostBehavior = vaultData?.settings?.ghostBehavior || 'random';
 
   const [isOpen, setIsOpen] = useState(false);
