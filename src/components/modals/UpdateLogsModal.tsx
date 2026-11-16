@@ -6,6 +6,12 @@ import { CheckCircle2, ChevronDown } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 
 const LOCAL_RELEASE_NOTES: Record<string, string> = {
+  '1.5.3': `### What's New in Tectoryx v1.5.3
+
+#### Bug Fixes & Stability
+- **Fixed Lock Vault Modal Flash:** Eliminated the split-second flash of the update logs modal when locking the vault.
+- **Strict Decoy Vault Isolation:** Enforced hard isolation for the Duress/Decoy vault mode. Decoy mode is strictly prohibited from mutating or saving to the physical \`data.vault\` file or modifying unencrypted profile metadata on disk.
+- **Lock Screen Identity:** Restored clear workspace identity labeling on the lock screen under the Tectoryx emblem.`,
   '1.5.2': `### What's New in Tectoryx v1.5.2
 
 #### Custom Native Title Bar
@@ -32,7 +38,7 @@ const LOCAL_RELEASE_NOTES: Record<string, string> = {
 };
 
 export const UpdateLogsModal: React.FC = () => {
-  const { vaultData, updateVaultData } = useVault();
+  const { isLocked, vaultData, updateVaultData } = useVault();
   const [isOpen, setIsOpen] = useState(false);
   const [currentVersion, setCurrentVersion] = useState<string | null>(null);
   const [hasScrolledToBottom, setHasScrolledToBottom] = useState(false);
@@ -41,6 +47,12 @@ export const UpdateLogsModal: React.FC = () => {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    // Do not check or open while vault is locked or data is not loaded
+    if (isLocked || !vaultData || !vaultData.settings) {
+      setIsOpen(false);
+      return;
+    }
+
     const checkVersion = async () => {
       try {
         const version = await getVersion();
@@ -85,7 +97,7 @@ export const UpdateLogsModal: React.FC = () => {
     };
     
     checkVersion();
-  }, [vaultData?.settings?.lastSeenVersion]);
+  }, [isLocked, vaultData?.settings?.lastSeenVersion]);
 
   // Check if content fits without scrolling
   useEffect(() => {
@@ -132,7 +144,7 @@ export const UpdateLogsModal: React.FC = () => {
     }
   };
 
-  if (!isOpen) return null;
+  if (isLocked || !vaultData || !isOpen) return null;
 
   return (
     <AnimatePresence>

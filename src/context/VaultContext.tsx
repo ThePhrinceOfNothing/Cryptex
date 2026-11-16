@@ -5,8 +5,9 @@ import type { VaultData } from '../lib/vault';
 
 interface VaultContextState {
   isLocked: boolean;
+  isDecoy: boolean;
   vaultData: VaultData | null;
-  unlockVault: (key: CryptoKey, salt: Uint8Array, data: VaultData) => Promise<void>;
+  unlockVault: (key: CryptoKey, salt: Uint8Array, data: VaultData, isDecoyMode?: boolean) => Promise<void>;
   lockVault: () => void;
   updateVaultData: (newData: Partial<VaultData>) => Promise<void>;
   exportVaultData: () => Promise<void>;
@@ -18,6 +19,7 @@ const VaultContext = createContext<VaultContextState | undefined>(undefined);
 
 export const VaultProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [isLocked, setIsLocked] = useState(true);
+  const [isDecoy, setIsDecoy] = useState(false);
   const [vaultData, setVaultData] = useState<VaultData | null>(null);
   const [cryptoKey, setCryptoKey] = useState<CryptoKey | null>(null);
   const [salt, setSalt] = useState<Uint8Array | null>(null);
@@ -28,6 +30,7 @@ export const VaultProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   // Auto-lock timer logic
   const lockVault = useCallback(() => {
     setIsLocked(true);
+    setIsDecoy(false);
     vaultDataRef.current = null;
     setVaultData(null);
     setCryptoKey(null);
@@ -99,16 +102,16 @@ export const VaultProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     };
   }, [isLocked, lockVault, vaultData?.settings?.autoLockTimer]);
 
-  const unlockVault = async (key: CryptoKey, keySalt: Uint8Array, data: VaultData) => {
+  const unlockVault = async (key: CryptoKey, keySalt: Uint8Array, data: VaultData, isDecoyMode = false) => {
     setCryptoKey(key);
     setSalt(keySalt);
+    setIsDecoy(isDecoyMode);
     vaultDataRef.current = data;
     setVaultData(data);
     setIsLocked(false);
 
-    // Self-healing: if the vault was just restored from a backup, the unencrypted config might be out of date.
-    // Sync it with the decrypted settings now that we have access to them.
-    if (data.settings) {
+    // Only sync unencrypted app config if NOT in decoy mode
+    if (!isDecoyMode && data.settings) {
       try {
         const { saveAppConfig } = await import('../lib/config');
         await saveAppConfig({
@@ -152,6 +155,11 @@ export const VaultProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     vaultDataRef.current = updatedData;
     setVaultData(updatedData);
 
+    // If running in decoy mode, NEVER overwrite the real vault on disk
+    if (isDecoy) {
+      return;
+    }
+
     // Persist to file system natively via Tauri
     try {
       await saveVaultWithKey(cryptoKey, salt, updatedData);
@@ -184,7 +192,7 @@ export const VaultProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   };
 
   return (
-    <VaultContext.Provider value={{ isLocked, vaultData, unlockVault, lockVault, updateVaultData, exportVaultData, changePassword, lockCountdown }}>
+    <VaultContext.Provider value={{ isLocked, isDecoy, vaultData, unlockVault, lockVault, updateVaultData, exportVaultData, changePassword, lockCountdown }}>
       {children}
     </VaultContext.Provider>
   );

@@ -2,6 +2,13 @@
 
 All notable changes to Tectoryx are documented in this file.
 
+## [1.5.3] - 2026-11-16
+
+### Fixed
+- **Lock Vault Modal Flash:** Eliminated the race condition where `UpdateLogsModal` detected `vaultData` becoming `null` on lock and briefly opened during the 0.4s fade-out animation.
+- **Strict Decoy Vault Isolation:** Enforced hard isolation for the Duress/Decoy vault mode. Decoy mode is strictly prohibited from mutating or saving to the physical `data.vault` file or modifying unencrypted profile metadata on disk.
+- **Lock Screen Identity:** Restored clear workspace identity labeling on the lock screen under the Tectoryx brand emblem.
+
 ## [1.5.2] - 2026-11-15
 
 ### Added

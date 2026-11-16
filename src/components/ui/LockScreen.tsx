@@ -95,13 +95,14 @@ export const LockScreen: React.FC = () => {
           const decoyKey = await deriveKey(password, salt);
           const jsonStr = await decryptData(ciphertext, iv, decoyKey);
           const decoyData = JSON.parse(jsonStr);
-          unlockVault(decoyKey, salt, decoyData);
+          unlockVault(decoyKey, salt, decoyData, true);
           return;
         } catch {
           // Decoy password attempt failed as well, continue to error
         }
       }
 
+      console.error("Master vault decryption failed:", err);
       playVaultLock();
       setError("Decryption failed. Incorrect master password.");
       triggerErrorShake();
@@ -225,6 +226,9 @@ export const LockScreen: React.FC = () => {
           <h1 className="text-xl font-semibold tracking-tight text-white">
             Tectoryx
           </h1>
+          <p className="text-xs font-medium text-zinc-400 mt-1">
+            {appConfig?.workspaceName || 'Personal Workspace'}
+          </p>
         </div>
 
         {/* Unlock Form with Motion Error Shake */}
