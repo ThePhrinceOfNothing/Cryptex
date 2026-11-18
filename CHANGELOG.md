@@ -2,6 +2,13 @@
 
 All notable changes to Tectoryx are documented in this file.
 
+## [1.6.0] - 2026-11-18
+
+### Added
+- **Binary Storage Engine:** Low-level pipeline optimizations for binary asset handling and storage.
+- **Memory Buffer Lifecycle:** Enhanced in-memory blob lifecycle management and automatic resource disposal.
+- **System Stability:** Refined global shortcut dispatching and window focus routines.
+
 ## [1.5.5] - 2026-11-16
 
 ### Added

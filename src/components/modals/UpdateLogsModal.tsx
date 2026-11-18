@@ -6,6 +6,12 @@ import { CheckCircle2, ChevronDown } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 
 const LOCAL_RELEASE_NOTES: Record<string, string> = {
+  '1.6.0': `### What's New in Tectoryx v1.6.0
+
+#### Performance & Storage Hardening
+- **Binary Storage Engine:** Low-level file pipeline optimizations and secure binary chunking.
+- **Memory Buffer Lifecycle:** Enhanced in-memory blob lifecycle management and automatic resource disposal.
+- **System Stability:** Refined global event dispatching and window focus handling.`,
   '1.5.5': `### What's New in Tectoryx v1.5.5
 
 #### ADHD Focus & Modular Workspace

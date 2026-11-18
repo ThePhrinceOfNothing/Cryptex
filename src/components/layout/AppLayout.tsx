@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import type { ReactNode } from 'react';
 import { 
   LayoutDashboard, 
@@ -28,6 +28,7 @@ import { GhostPet } from '../ui/GhostPet';
 import { AmbiencePlayer } from '../ui/AmbiencePlayer';
 import { QuickScratchpadModal } from '../ui/QuickScratchpadModal';
 import { SteganographyModal } from '../modals/SteganographyModal';
+import { GhostVaultModal } from '../modals/GhostVaultModal';
 
 interface AppLayoutProps {
   children: ReactNode;
@@ -52,6 +53,8 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
   const [isMiddlePaneOpen, setIsMiddlePaneOpen] = useState(true);
   const [isScratchpadOpen, setIsScratchpadOpen] = useState(false);
   const [isSteganographyOpen, setIsSteganographyOpen] = useState(false);
+  const [isGhostVaultOpen, setIsGhostVaultOpen] = useState(false);
+  const keySequenceRef = useRef<string>('');
 
   const { vaultData, lockVault, lockCountdown } = useVault();
 
@@ -73,11 +76,31 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
       if ((e.ctrlKey || e.metaKey) && (e.shiftKey || e.altKey) && (e.key === 'l' || e.key === 'L')) {
         e.preventDefault();
         handleLockRequest();
+        return;
       }
       // Quick Scratchpad: Ctrl+Shift+Space
       if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.code === 'Space' || e.key === ' ')) {
         e.preventDefault();
         setIsScratchpadOpen(prev => !prev);
+        return;
+      }
+      // Covert Ghost Vault Stealth Hotkey: Ctrl+Alt+Shift+B
+      if ((e.ctrlKey || e.metaKey) && e.altKey && e.shiftKey && (e.key === 'b' || e.key === 'B')) {
+        e.preventDefault();
+        setIsGhostVaultOpen(prev => !prev);
+        return;
+      }
+
+      // Background Sequence Detection: "bazooka"
+      const target = e.target as HTMLElement | null;
+      const isInput = target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable);
+
+      if (!isInput && e.key && e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        keySequenceRef.current = (keySequenceRef.current + e.key.toLowerCase()).slice(-10);
+        if (keySequenceRef.current.endsWith('bazooka')) {
+          keySequenceRef.current = '';
+          setIsGhostVaultOpen(true);
+        }
       }
     };
     window.addEventListener('keydown', handleGlobalShortcuts);
@@ -153,6 +176,10 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
       <SteganographyModal
         isOpen={isSteganographyOpen}
         onClose={() => setIsSteganographyOpen(false)}
+      />
+      <GhostVaultModal
+        isOpen={isGhostVaultOpen}
+        onClose={() => setIsGhostVaultOpen(false)}
       />
 
       {/* Auto-Lock Warning Banner */}

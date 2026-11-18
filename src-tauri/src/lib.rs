@@ -456,6 +456,92 @@ fn load_config(app: AppHandle) -> Result<Option<AppConfig>, String> {
     Ok(Some(config))
 }
 
+fn get_ghost_vault_dir(app: &AppHandle) -> Result<PathBuf, String> {
+    let app_dir = app
+        .path()
+        .app_data_dir()
+        .map_err(|_| "Failed to get app data directory".to_string())?;
+    let ghost_dir = app_dir.join("ghost_vault");
+    if !ghost_dir.exists() {
+        fs::create_dir_all(&ghost_dir).map_err(|e| e.to_string())?;
+    }
+    Ok(ghost_dir)
+}
+
+#[tauri::command]
+fn ghost_vault_exists(app: AppHandle) -> Result<bool, String> {
+    let ghost_dir = get_ghost_vault_dir(&app)?;
+    let index_file = ghost_dir.join("index.vault");
+    Ok(index_file.exists())
+}
+
+#[tauri::command]
+fn save_ghost_index(app: AppHandle, payload: EncryptedVault) -> Result<(), String> {
+    let ghost_dir = get_ghost_vault_dir(&app)?;
+    let index_file = ghost_dir.join("index.vault");
+    let data = serde_json::to_string(&payload).map_err(|e| e.to_string())?;
+    write_atomic(&index_file, &data)?;
+    Ok(())
+}
+
+#[tauri::command]
+fn load_ghost_index(app: AppHandle) -> Result<Option<EncryptedVault>, String> {
+    let ghost_dir = get_ghost_vault_dir(&app)?;
+    let index_file = ghost_dir.join("index.vault");
+    if !index_file.exists() {
+        return Ok(None);
+    }
+    let data = fs::read_to_string(index_file).map_err(|e| e.to_string())?;
+    let payload: EncryptedVault = serde_json::from_str(&data).map_err(|e| e.to_string())?;
+    Ok(Some(payload))
+}
+
+#[tauri::command]
+fn save_ghost_file(app: AppHandle, id: String, data: Vec<u8>) -> Result<(), String> {
+    if id.contains('/') || id.contains('\\') || id.contains("..") {
+        return Err("Invalid file id".to_string());
+    }
+    let ghost_dir = get_ghost_vault_dir(&app)?;
+    let file_path = ghost_dir.join(format!("{}.bin", id));
+    fs::write(file_path, data).map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+#[tauri::command]
+fn load_ghost_file(app: AppHandle, id: String) -> Result<Vec<u8>, String> {
+    if id.contains('/') || id.contains('\\') || id.contains("..") {
+        return Err("Invalid file id".to_string());
+    }
+    let ghost_dir = get_ghost_vault_dir(&app)?;
+    let file_path = ghost_dir.join(format!("{}.bin", id));
+    if !file_path.exists() {
+        return Err("Ghost file not found".to_string());
+    }
+    fs::read(file_path).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn delete_ghost_file(app: AppHandle, id: String) -> Result<(), String> {
+    if id.contains('/') || id.contains('\\') || id.contains("..") {
+        return Err("Invalid file id".to_string());
+    }
+    let ghost_dir = get_ghost_vault_dir(&app)?;
+    let file_path = ghost_dir.join(format!("{}.bin", id));
+    if file_path.exists() {
+        fs::remove_file(file_path).map_err(|e| e.to_string())?;
+    }
+    Ok(())
+}
+
+#[tauri::command]
+fn wipe_ghost_vault(app: AppHandle) -> Result<(), String> {
+    let ghost_dir = get_ghost_vault_dir(&app)?;
+    if ghost_dir.exists() {
+        fs::remove_dir_all(&ghost_dir).map_err(|e| e.to_string())?;
+    }
+    Ok(())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -476,7 +562,14 @@ pub fn run() {
             list_vault_snapshots,
             restore_vault_snapshot,
             create_manual_snapshot,
-            create_pre_update_snapshot
+            create_pre_update_snapshot,
+            ghost_vault_exists,
+            save_ghost_index,
+            load_ghost_index,
+            save_ghost_file,
+            load_ghost_file,
+            delete_ghost_file,
+            wipe_ghost_vault
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
