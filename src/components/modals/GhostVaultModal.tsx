@@ -197,7 +197,9 @@ export const GhostVaultModal: React.FC<GhostVaultModalProps> = ({ isOpen, onClos
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
         setUploadStatus(`Encrypting ${file.name} (${i + 1}/${files.length})...`);
-        const meta = await encryptAndStoreGhostFile(cryptoKey, file);
+        const meta = await encryptAndStoreGhostFile(cryptoKey, file, (ratio) => {
+          setUploadStatus(`Encrypting ${file.name} (${Math.round(ratio * 100)}%)...`);
+        });
         newFilesList.unshift(meta);
       }
 

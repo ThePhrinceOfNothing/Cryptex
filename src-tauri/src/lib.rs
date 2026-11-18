@@ -497,18 +497,50 @@ fn load_ghost_index(app: AppHandle) -> Result<Option<EncryptedVault>, String> {
 }
 
 #[tauri::command]
-fn save_ghost_file(app: AppHandle, id: String, data: Vec<u8>) -> Result<(), String> {
+fn save_ghost_file(app: AppHandle, request: tauri::ipc::Request) -> Result<(), String> {
+    let headers = request.headers();
+    let id = headers
+        .get("x-file-id")
+        .and_then(|v| v.to_str().ok())
+        .ok_or_else(|| "Missing x-file-id header".to_string())?;
+
     if id.contains('/') || id.contains('\\') || id.contains("..") {
         return Err("Invalid file id".to_string());
     }
+
     let ghost_dir = get_ghost_vault_dir(&app)?;
     let file_path = ghost_dir.join(format!("{}.bin", id));
-    fs::write(file_path, data).map_err(|e| e.to_string())?;
+
+    let is_append = headers
+        .get("x-append")
+        .and_then(|v| v.to_str().ok())
+        .map(|v| v == "1" || v == "true")
+        .unwrap_or(false);
+
+    let bytes = match request.body() {
+        tauri::ipc::InvokeBody::Raw(data) => data.as_slice(),
+        _ => return Err("Expected raw binary body".to_string()),
+    };
+
+    use std::fs::OpenOptions;
+    use std::io::Write;
+
+    if is_append {
+        let mut file = OpenOptions::new()
+            .create(true)
+            .append(true)
+            .open(file_path)
+            .map_err(|e| e.to_string())?;
+        file.write_all(bytes).map_err(|e| e.to_string())?;
+    } else {
+        fs::write(file_path, bytes).map_err(|e| e.to_string())?;
+    }
+
     Ok(())
 }
 
 #[tauri::command]
-fn load_ghost_file(app: AppHandle, id: String) -> Result<Vec<u8>, String> {
+fn load_ghost_file(app: AppHandle, id: String) -> Result<tauri::ipc::Response, String> {
     if id.contains('/') || id.contains('\\') || id.contains("..") {
         return Err("Invalid file id".to_string());
     }
@@ -517,7 +549,8 @@ fn load_ghost_file(app: AppHandle, id: String) -> Result<Vec<u8>, String> {
     if !file_path.exists() {
         return Err("Ghost file not found".to_string());
     }
-    fs::read(file_path).map_err(|e| e.to_string())
+    let bytes = fs::read(file_path).map_err(|e| e.to_string())?;
+    Ok(tauri::ipc::Response::new(bytes))
 }
 
 #[tauri::command]

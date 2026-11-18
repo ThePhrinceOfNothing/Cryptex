@@ -262,7 +262,11 @@ export async function generateMediaThumbnail(file: File): Promise<{ thumbnail?: 
   return {};
 }
 
-export async function encryptAndStoreGhostFile(key: CryptoKey, file: File): Promise<GhostFileMeta> {
+export async function encryptAndStoreGhostFile(
+  key: CryptoKey,
+  file: File,
+  onProgress?: (ratio: number) => void
+): Promise<GhostFileMeta> {
   const fileBytes = await file.arrayBuffer();
   const iv = generateRandomBytes(12);
 
@@ -275,11 +279,33 @@ export async function encryptAndStoreGhostFile(key: CryptoKey, file: File): Prom
   const id = 'ghost_' + Date.now() + '_' + Math.random().toString(36).substring(2, 9);
   const encryptedBytes = new Uint8Array(ciphertext);
 
-  // Send binary data directly to Tauri backend
-  await invoke('save_ghost_file', {
-    id,
-    data: Array.from(encryptedBytes)
-  });
+  // Send binary data directly to Tauri backend using raw binary streaming
+  const CHUNK_SIZE = 16 * 1024 * 1024; // 16 MB chunks
+  if (encryptedBytes.byteLength <= CHUNK_SIZE) {
+    await invoke('save_ghost_file', encryptedBytes, {
+      headers: {
+        'x-file-id': id,
+        'x-append': '0'
+      }
+    });
+    if (onProgress) onProgress(1.0);
+  } else {
+    let offset = 0;
+    let isAppend = false;
+    while (offset < encryptedBytes.byteLength) {
+      const end = Math.min(offset + CHUNK_SIZE, encryptedBytes.byteLength);
+      const chunk = encryptedBytes.subarray(offset, end);
+      await invoke('save_ghost_file', chunk, {
+        headers: {
+          'x-file-id': id,
+          'x-append': isAppend ? '1' : '0'
+        }
+      });
+      isAppend = true;
+      offset = end;
+      if (onProgress) onProgress(offset / encryptedBytes.byteLength);
+    }
+  }
 
   const ext = file.name.split('.').pop()?.toLowerCase() || '';
   const resolvedMime = file.type || EXTENSION_MIME_MAP[ext] || 'application/octet-stream';
@@ -310,15 +336,17 @@ export async function encryptAndStoreGhostFile(key: CryptoKey, file: File): Prom
 }
 
 export async function loadAndDecryptGhostFile(key: CryptoKey, meta: GhostFileMeta): Promise<Blob> {
-  const encryptedRaw: number[] = await invoke('load_ghost_file', { id: meta.id });
-  const encryptedBytes = new Uint8Array(encryptedRaw);
+  const rawResponse = await invoke<ArrayBuffer | Uint8Array>('load_ghost_file', { id: meta.id });
+  const encryptedBytes = rawResponse instanceof Uint8Array 
+    ? rawResponse 
+    : new Uint8Array(rawResponse);
 
   const ivBytes = new Uint8Array(base64ToBuffer(meta.iv));
 
   const decryptedBuffer = await crypto.subtle.decrypt(
     { name: 'AES-GCM', iv: ivBytes as any },
     key,
-    encryptedBytes.buffer as any
+    encryptedBytes
   );
 
   return new Blob([decryptedBuffer], { type: meta.mimeType });
