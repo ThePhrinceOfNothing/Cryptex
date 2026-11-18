@@ -14,6 +14,8 @@ export interface GhostFileMeta {
   mimeType: string;
   addedAt: number;
   iv: string; // base64
+  thumbnail?: string; // base64 data URL (encrypted inside index)
+  duration?: number; // duration in seconds
 }
 
 export interface GhostVaultIndexData {
@@ -112,6 +114,154 @@ const EXTENSION_MIME_MAP: Record<string, string> = {
   csv: 'text/csv'
 };
 
+// In-memory zero-trace thumbnail generator for videos and images
+export async function generateMediaThumbnail(file: File): Promise<{ thumbnail?: string; duration?: number }> {
+  if (typeof document === 'undefined') return {};
+
+  const name = file.name.toLowerCase();
+  const mime = file.type || '';
+  const isVideo = mime.startsWith('video/') || /\.(mp4|webm|mov|m4v|mkv|avi|wmv|flv)$/i.test(name);
+  const isImage = mime.startsWith('image/') || /\.(jpg|jpeg|png|webp|gif|svg)$/i.test(name);
+
+  if (isVideo) {
+    return new Promise((resolve) => {
+      const video = document.createElement('video');
+      video.preload = 'metadata';
+      video.muted = true;
+      video.playsInline = true;
+
+      const blobUrl = URL.createObjectURL(file);
+      video.src = blobUrl;
+
+      let resolved = false;
+      const cleanUp = () => {
+        try {
+          URL.revokeObjectURL(blobUrl);
+          video.removeAttribute('src');
+          video.load();
+        } catch {}
+      };
+
+      const finish = (result: { thumbnail?: string; duration?: number }) => {
+        if (resolved) return;
+        resolved = true;
+        clearTimeout(timer);
+        cleanUp();
+        resolve(result);
+      };
+
+      // 3.5s safety timeout if video codec cannot be decoded by browser canvas
+      const timer = setTimeout(() => {
+        finish({});
+      }, 3500);
+
+      video.onloadedmetadata = () => {
+        const dur = video.duration || 0;
+        // Seek to 10% of video (or 0.5s if short) to avoid black intro frames
+        const targetTime = Math.min(Math.max(dur * 0.1, 0.5), dur > 1 ? dur - 0.5 : 0);
+        video.currentTime = targetTime;
+      };
+
+      video.onseeked = () => {
+        try {
+          const maxDim = 320;
+          let w = video.videoWidth || 320;
+          let h = video.videoHeight || 180;
+          if (w > maxDim || h > maxDim) {
+            if (w > h) {
+              h = Math.round((h * maxDim) / w);
+              w = maxDim;
+            } else {
+              w = Math.round((w * maxDim) / h);
+              h = maxDim;
+            }
+          }
+          const canvas = document.createElement('canvas');
+          canvas.width = w;
+          canvas.height = h;
+          const ctx = canvas.getContext('2d');
+          if (ctx) {
+            ctx.drawImage(video, 0, 0, w, h);
+            const thumbnail = canvas.toDataURL('image/jpeg', 0.65);
+            finish({ thumbnail, duration: video.duration || undefined });
+            return;
+          }
+        } catch (e) {
+          console.warn('Canvas thumbnail extraction failed:', e);
+        }
+        finish({ duration: video.duration || undefined });
+      };
+
+      video.onerror = () => {
+        finish({});
+      };
+    });
+  }
+
+  if (isImage) {
+    return new Promise((resolve) => {
+      const img = new Image();
+      const blobUrl = URL.createObjectURL(file);
+      img.src = blobUrl;
+
+      let resolved = false;
+      const cleanUp = () => {
+        try {
+          URL.revokeObjectURL(blobUrl);
+        } catch {}
+      };
+
+      const finish = (result: { thumbnail?: string }) => {
+        if (resolved) return;
+        resolved = true;
+        clearTimeout(timer);
+        cleanUp();
+        resolve(result);
+      };
+
+      const timer = setTimeout(() => {
+        finish({});
+      }, 2500);
+
+      img.onload = () => {
+        try {
+          const maxDim = 320;
+          let w = img.naturalWidth || 320;
+          let h = img.naturalHeight || 180;
+          if (w > maxDim || h > maxDim) {
+            if (w > h) {
+              h = Math.round((h * maxDim) / w);
+              w = maxDim;
+            } else {
+              w = Math.round((w * maxDim) / h);
+              h = maxDim;
+            }
+          }
+          const canvas = document.createElement('canvas');
+          canvas.width = w;
+          canvas.height = h;
+          const ctx = canvas.getContext('2d');
+          if (ctx) {
+            ctx.drawImage(img, 0, 0, w, h);
+            const thumbnail = canvas.toDataURL('image/jpeg', 0.65);
+            finish({ thumbnail });
+            return;
+          }
+        } catch (e) {
+          console.warn('Image thumbnail extraction failed:', e);
+        }
+        finish({});
+      };
+
+      img.onerror = () => {
+        finish({});
+      };
+    });
+  }
+
+  return {};
+}
+
 export async function encryptAndStoreGhostFile(key: CryptoKey, file: File): Promise<GhostFileMeta> {
   const fileBytes = await file.arrayBuffer();
   const iv = generateRandomBytes(12);
@@ -134,13 +284,26 @@ export async function encryptAndStoreGhostFile(key: CryptoKey, file: File): Prom
   const ext = file.name.split('.').pop()?.toLowerCase() || '';
   const resolvedMime = file.type || EXTENSION_MIME_MAP[ext] || 'application/octet-stream';
 
+  // Extract media thumbnail & duration in-memory
+  let thumbnail: string | undefined;
+  let duration: number | undefined;
+  try {
+    const media = await generateMediaThumbnail(file);
+    thumbnail = media.thumbnail;
+    duration = media.duration;
+  } catch (err) {
+    console.warn('Media thumbnail generation failed:', err);
+  }
+
   const meta: GhostFileMeta = {
     id,
     name: file.name,
     size: file.size,
     mimeType: resolvedMime,
     addedAt: Date.now(),
-    iv: bufferToBase64(iv.buffer as ArrayBuffer)
+    iv: bufferToBase64(iv.buffer as ArrayBuffer),
+    thumbnail,
+    duration
   };
 
   return meta;

@@ -285,10 +285,103 @@ export const GhostVaultModal: React.FC<GhostVaultModalProps> = ({ isOpen, onClos
     }
   };
 
+  // Auto-capture thumbnail for media that was uploaded before thumbnail support
+  const handleAutoCaptureVideoThumbnail = async (videoEl: HTMLVideoElement) => {
+    if (!activeMediaFile || activeMediaFile.thumbnail || !cryptoKey || !vaultIndex) return;
+    try {
+      const maxDim = 320;
+      let w = videoEl.videoWidth || 320;
+      let h = videoEl.videoHeight || 180;
+      if (w > maxDim || h > maxDim) {
+        if (w > h) {
+          h = Math.round((h * maxDim) / w);
+          w = maxDim;
+        } else {
+          w = Math.round((w * maxDim) / h);
+          h = maxDim;
+        }
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+      ctx.drawImage(videoEl, 0, 0, w, h);
+      const thumb = canvas.toDataURL('image/jpeg', 0.65);
+      const duration = videoEl.duration || activeMediaFile.duration;
+
+      const fileId = activeMediaFile.id;
+      const updatedFiles = vaultIndex.files.map((f) =>
+        f.id === fileId ? { ...f, thumbnail: thumb, duration } : f
+      );
+      const updatedIndex: GhostVaultIndexData = {
+        ...vaultIndex,
+        files: updatedFiles
+      };
+      await saveGhostVaultIndex(cryptoKey, updatedIndex);
+      setVaultIndex(updatedIndex);
+      setActiveMediaFile({ ...activeMediaFile, thumbnail: thumb, duration });
+    } catch (err) {
+      console.warn('Auto capture video thumbnail failed:', err);
+    }
+  };
+
+  const handleAutoCaptureImageThumbnail = async (imgEl: HTMLImageElement) => {
+    if (!activeMediaFile || activeMediaFile.thumbnail || !cryptoKey || !vaultIndex) return;
+    try {
+      const maxDim = 320;
+      let w = imgEl.naturalWidth || 320;
+      let h = imgEl.naturalHeight || 180;
+      if (w > maxDim || h > maxDim) {
+        if (w > h) {
+          h = Math.round((h * maxDim) / w);
+          w = maxDim;
+        } else {
+          w = Math.round((w * maxDim) / h);
+          h = maxDim;
+        }
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+      ctx.drawImage(imgEl, 0, 0, w, h);
+      const thumb = canvas.toDataURL('image/jpeg', 0.65);
+
+      const fileId = activeMediaFile.id;
+      const updatedFiles = vaultIndex.files.map((f) =>
+        f.id === fileId ? { ...f, thumbnail: thumb } : f
+      );
+      const updatedIndex: GhostVaultIndexData = {
+        ...vaultIndex,
+        files: updatedFiles
+      };
+      await saveGhostVaultIndex(cryptoKey, updatedIndex);
+      setVaultIndex(updatedIndex);
+      setActiveMediaFile({ ...activeMediaFile, thumbnail: thumb });
+    } catch (err) {
+      console.warn('Auto capture image thumbnail failed:', err);
+    }
+  };
+
   const formatSize = (bytes: number) => {
     if (bytes < 1024) return `${bytes} B`;
     if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  };
+
+  const formatDuration = (seconds?: number): string => {
+    if (!seconds || isNaN(seconds) || !isFinite(seconds)) return '';
+    const total = Math.floor(seconds);
+    const m = Math.floor(total / 60);
+    const s = total % 60;
+    if (m >= 60) {
+      const h = Math.floor(m / 60);
+      const remM = m % 60;
+      return `${h}:${remM.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+    }
+    return `${m}:${s.toString().padStart(2, '0')}`;
   };
 
   const filteredFiles = (vaultIndex?.files || []).filter(f => {
@@ -494,41 +587,82 @@ export const GhostVaultModal: React.FC<GhostVaultModalProps> = ({ isOpen, onClos
                     </p>
                   </div>
                 ) : (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3.5">
                     {filteredFiles.map((file) => {
                       const isVideo = file.mimeType.startsWith('video/');
                       const isImage = file.mimeType.startsWith('image/');
                       return (
                         <div
                           key={file.id}
-                          className="group relative bg-zinc-900/50 border border-zinc-800/80 hover:border-zinc-700 rounded-xl p-3 flex flex-col justify-between transition-all"
+                          className="group relative bg-zinc-900/60 border border-zinc-800/80 hover:border-zinc-700/80 rounded-xl p-3 flex flex-col justify-between transition-all hover:shadow-lg hover:shadow-black/40"
                         >
-                          <div className="flex items-start gap-2.5 min-w-0 mb-3">
-                            <div className="w-9 h-9 rounded-lg bg-zinc-800 flex items-center justify-center shrink-0 text-zinc-400">
-                              {isVideo ? (
-                                <Video size={16} strokeWidth={1.75} className="text-purple-400" />
-                              ) : isImage ? (
-                                <ImageIcon size={16} strokeWidth={1.75} className="text-blue-400" />
-                              ) : (
-                                <FileText size={16} strokeWidth={1.75} className="text-emerald-400" />
+                          <div>
+                            {/* Video / Image Thumbnail Preview */}
+                            {(isVideo || isImage) && (
+                              <div
+                                onClick={() => handlePlayMedia(file)}
+                                className="relative w-full aspect-video rounded-lg overflow-hidden bg-black/60 border border-zinc-800/80 mb-2.5 cursor-pointer group/thumb flex items-center justify-center select-none"
+                              >
+                                {file.thumbnail ? (
+                                  <img
+                                    src={file.thumbnail}
+                                    alt={file.name}
+                                    className="w-full h-full object-cover transition-transform duration-300 group-hover/thumb:scale-105"
+                                  />
+                                ) : (
+                                  <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-b from-zinc-900/90 to-black text-zinc-600 gap-1.5">
+                                    {isVideo ? (
+                                      <Video size={24} strokeWidth={1.5} className="text-purple-400/70" />
+                                    ) : (
+                                      <ImageIcon size={24} strokeWidth={1.5} className="text-blue-400/70" />
+                                    )}
+                                    <span className="text-[10px] font-mono text-zinc-500">
+                                      {isVideo ? 'Click to play' : 'Click to view'}
+                                    </span>
+                                  </div>
+                                )}
+
+                                {/* Hover Play Overlay */}
+                                <div className="absolute inset-0 bg-black/30 opacity-70 group-hover/thumb:opacity-100 group-hover/thumb:bg-black/20 flex items-center justify-center transition-all">
+                                  <div className="w-9 h-9 rounded-full bg-black/70 backdrop-blur-xs border border-white/20 flex items-center justify-center text-white shadow-lg group-hover/thumb:scale-110 group-hover/thumb:bg-blue-600 group-hover/thumb:border-blue-400 transition-all">
+                                    <Play size={13} className="fill-current translate-x-0.5" />
+                                  </div>
+                                </div>
+
+                                {/* Video Duration Badge */}
+                                {isVideo && file.duration && (
+                                  <span className="absolute bottom-1.5 right-1.5 px-1.5 py-0.5 rounded text-[10px] font-mono font-medium bg-black/85 backdrop-blur-xs text-zinc-200 border border-white/10 shadow-xs">
+                                    {formatDuration(file.duration)}
+                                  </span>
+                                )}
+                              </div>
+                            )}
+
+                            {/* File Name & Metadata */}
+                            <div className="flex items-start gap-2.5 min-w-0 mb-2.5">
+                              {!isVideo && !isImage && (
+                                <div className="w-9 h-9 rounded-lg bg-zinc-800/80 flex items-center justify-center shrink-0 text-zinc-400 border border-zinc-700/50">
+                                  <FileText size={16} strokeWidth={1.75} className="text-emerald-400" />
+                                </div>
                               )}
-                            </div>
-                            <div className="min-w-0 flex-1">
-                              <p className="text-xs font-semibold text-zinc-200 truncate" title={file.name}>
-                                {file.name}
-                              </p>
-                              <p className="text-[10px] font-mono text-zinc-500 mt-0.5">
-                                {formatSize(file.size)} &middot; {new Date(file.addedAt).toLocaleDateString()}
-                              </p>
+                              <div className="min-w-0 flex-1">
+                                <p className="text-xs font-semibold text-zinc-200 truncate" title={file.name}>
+                                  {file.name}
+                                </p>
+                                <p className="text-[10px] font-mono text-zinc-500 mt-0.5">
+                                  {formatSize(file.size)} &middot; {new Date(file.addedAt).toLocaleDateString()}
+                                </p>
+                              </div>
                             </div>
                           </div>
 
-                          <div className="flex items-center justify-between pt-2 border-t border-zinc-800/40 text-xs">
+                          {/* Actions */}
+                          <div className="flex items-center justify-between pt-2 border-t border-zinc-800/60 text-xs mt-1">
                             {(isVideo || isImage) ? (
                               <button
                                 onClick={() => handlePlayMedia(file)}
                                 disabled={isMediaLoading}
-                                className="px-2.5 py-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-[11px] font-medium rounded-md transition-colors flex items-center gap-1"
+                                className="px-2.5 py-1 bg-zinc-800/90 hover:bg-zinc-700 text-zinc-200 text-[11px] font-medium rounded-md transition-colors flex items-center gap-1 border border-zinc-700/40"
                               >
                                 <Play size={11} className="fill-zinc-300" />
                                 <span>{isVideo ? 'Play Video' : 'View Image'}</span>
@@ -603,12 +737,15 @@ export const GhostVaultModal: React.FC<GhostVaultModalProps> = ({ isOpen, onClos
                   src={activeMediaUrl}
                   controls
                   autoPlay
+                  onLoadedData={(e) => handleAutoCaptureVideoThumbnail(e.currentTarget)}
+                  onSeeked={(e) => handleAutoCaptureVideoThumbnail(e.currentTarget)}
                   className="w-full max-h-[75vh] object-contain rounded-xl focus:outline-none"
                 />
               ) : (
                 <img
                   src={activeMediaUrl}
                   alt={activeMediaFile.name}
+                  onLoad={(e) => handleAutoCaptureImageThumbnail(e.currentTarget)}
                   className="max-w-full max-h-[75vh] object-contain rounded-xl"
                 />
               )}
