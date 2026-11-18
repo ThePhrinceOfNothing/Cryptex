@@ -2,6 +2,13 @@
 
 All notable changes to Tectoryx are documented in this file.
 
+## [1.6.1] - 2026-11-18
+
+### Added
+- **Streaming Binary Pipeline:** 16 MB chunked streaming to handle large binary file imports (250MB+ / 1GB+) without memory constraints.
+- **Fast Visual Indexing:** Encrypted in-memory media thumbnails and duration badges for rapid asset identification.
+- **MIME Resolution:** Enhanced extension fallback for media containers.
+
 ## [1.6.0] - 2026-11-18
 
 ### Added

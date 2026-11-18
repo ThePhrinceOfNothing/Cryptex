@@ -6,6 +6,12 @@ import { CheckCircle2, ChevronDown } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 
 const LOCAL_RELEASE_NOTES: Record<string, string> = {
+  '1.6.1': `### What's New in Tectoryx v1.6.1
+
+#### Binary Streaming & Media Pipeline
+- **Streaming Binary IPC:** 16 MB chunked streaming pipeline for binary assets, eliminating memory limits on large file uploads (250MB+ / 1GB+).
+- **Fast Visual Indexing:** In-memory encrypted preview thumbnails and duration badges for rapid visual identification.
+- **MIME Resolution:** Enhanced extension fallback for media containers.`,
   '1.6.0': `### What's New in Tectoryx v1.6.0
 
 #### Performance & Storage Hardening
