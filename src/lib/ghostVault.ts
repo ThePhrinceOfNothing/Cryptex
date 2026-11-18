@@ -89,6 +89,29 @@ export async function saveGhostVaultIndex(key: CryptoKey, index: GhostVaultIndex
   await invoke('save_ghost_index', { payload });
 }
 
+// Fallback MIME map when OS / browser leaves file.type empty (common on Windows for MKV/AVI/MOV)
+const EXTENSION_MIME_MAP: Record<string, string> = {
+  mp4: 'video/mp4',
+  m4v: 'video/mp4',
+  webm: 'video/webm',
+  mov: 'video/quicktime',
+  mkv: 'video/x-matroska',
+  avi: 'video/x-msvideo',
+  wmv: 'video/x-ms-wmv',
+  flv: 'video/x-flv',
+  jpg: 'image/jpeg',
+  jpeg: 'image/jpeg',
+  png: 'image/png',
+  gif: 'image/gif',
+  webp: 'image/webp',
+  svg: 'image/svg+xml',
+  pdf: 'application/pdf',
+  txt: 'text/plain',
+  md: 'text/markdown',
+  json: 'application/json',
+  csv: 'text/csv'
+};
+
 export async function encryptAndStoreGhostFile(key: CryptoKey, file: File): Promise<GhostFileMeta> {
   const fileBytes = await file.arrayBuffer();
   const iv = generateRandomBytes(12);
@@ -108,11 +131,14 @@ export async function encryptAndStoreGhostFile(key: CryptoKey, file: File): Prom
     data: Array.from(encryptedBytes)
   });
 
+  const ext = file.name.split('.').pop()?.toLowerCase() || '';
+  const resolvedMime = file.type || EXTENSION_MIME_MAP[ext] || 'application/octet-stream';
+
   const meta: GhostFileMeta = {
     id,
     name: file.name,
     size: file.size,
-    mimeType: file.type || 'application/octet-stream',
+    mimeType: resolvedMime,
     addedAt: Date.now(),
     iv: bufferToBase64(iv.buffer as ArrayBuffer)
   };
